@@ -257,6 +257,8 @@ async function main() {
 				{ obj: post.opts, key: 'sharpen', name: 'sharpen pass', onChange: rebuildPost },
 				{ ...U(post.u.sharpen), min: 0, max: 1, step: 0.01, name: 'sharpen amount' },
 				{ ...U(post.u.motionBlur), min: 0, max: 2, step: 0.01, name: 'motion blur' },
+				{ ...U(post.u.turnBlur), min: 0, max: 1, step: 0.01, name: 'blur when turning camera' },
+				{ ...U(post.u.maxBlur), min: 0, max: 0.15, step: 0.001, name: 'max blur length' },
 				{ ...U(post.u.grain), min: 0, max: 0.2, step: 0.001, name: 'film grain' },
 				{ ...U(post.u.ca), min: 0, max: 2, step: 0.01, name: 'chromatic aberration' },
 			],
@@ -461,7 +463,7 @@ async function main() {
 		wires.update(camera, city.origin, layout.pitch, values['Street Width'], !!delta);
 		holoArt.update(dt, camera, city.origin, layout.pitch, values['Street Width']);
 
-		post.render();
+		post.render(dt);
 		storeViewProj(camera);
 		capture.afterRender();
 		capture.tick();

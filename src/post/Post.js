@@ -14,7 +14,7 @@
 import { RenderPipeline, Color, ACESFilmicToneMapping, SRGBColorSpace, CanvasTexture } from 'three/webgpu';
 import {
 	pass, mrt, output, velocity, uniform, step, vec2, vec3, vec4, float, int, max, mix, dot, smoothstep, length, uv, renderOutput,
-	time, hash, screenCoordinate, texture, luminance, clamp, pow, select, Fn, normalView, convertToTexture, screenSize, mx_fractal_noise_float, abs,
+	time, hash, screenCoordinate, min, texture, luminance, clamp, pow, select, Fn, normalView, convertToTexture, screenSize, mx_fractal_noise_float, abs,
 } from 'three/tsl';
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { gaussianBlur } from 'three/addons/tsl/display/GaussianBlurNode.js';
@@ -24,6 +24,7 @@ import { chromaticAberration } from 'three/addons/tsl/display/ChromaticAberratio
 import { fxaa } from 'three/addons/tsl/display/FXAANode.js';
 import { smaa } from 'three/addons/tsl/display/SMAANode.js';
 import { sharpen } from 'three/addons/tsl/display/SharpenNode.js';
+import { prevViewProjRot, invViewProjRot, updateCameraRotation } from '../materials/velocity.js';
 import { dof } from 'three/addons/tsl/display/DepthOfFieldNode.js';
 
 let _dirt = null;
@@ -71,6 +72,9 @@ export class Post {
 		this.renderer = renderer;
 		this.u = {
 			motionBlur: uniform(0.3),
+			turnBlur: uniform(0.15),
+			maxBlur: uniform(0.03),
+			shutter: uniform(1),
 			ssr: uniform(1.8),
 			haze: uniform(0.35),
 			dofAmount: uniform(0),
@@ -151,8 +155,18 @@ export class Post {
 		const own = (n) => (this._tail.push(n), n);
 		const vel = this.scenePass.getTextureNode('velocity');
 
-		// camera motion blur (velocity is an NDC delta; convert to UV space)
-		const moved = motionBlur(this.wet, vel.xy.mul(vec2(0.5, -0.5)).mul(U.motionBlur), int(10));
+		// camera motion blur. Velocity is a per-frame NDC delta. Split off the part caused by
+		// the camera *turning* (reproject this pixel's view ray with last frame's rotation):
+		// fast mouse-look would otherwise smear the whole frame, sky included.
+		const ndc = vec2(uv().x.mul(2).sub(1), float(1).sub(uv().y.mul(2)));
+		const ray = invViewProjRot.mul(vec4(ndc, 0.5, 1));
+		const prevClip = prevViewProjRot.mul(vec4(ray.xyz.div(ray.w), 1));
+		const turnVel = ndc.sub(prevClip.xy.div(prevClip.w)).mul(step(1e-4, prevClip.w));
+		// shutter: normalise to a 60 fps frame so low frame rates don't lengthen the streaks
+		const v = vel.xy.sub(turnVel.mul(float(1).sub(U.turnBlur))).mul(vec2(0.5, -0.5)).mul(U.motionBlur).mul(U.shutter);
+		const vLen = length(v);
+		const vClamped = v.mul(min(float(1), U.maxBlur.div(max(vLen, 1e-5)))); // cap streak length (UV)
+		const moved = motionBlur(this.wet, vClamped, int(10));
 		// cinematic depth of field (driven per shot by the director: focus on the car).
 		// The DOF composite swaps out-of-focus pixels for its half-res blur even at bokeh 0,
 		// so it is faded out entirely whenever the amount is zero (driving, wide shots).
@@ -202,7 +216,11 @@ export class Post {
 		this.pipeline.needsUpdate = true;
 	}
 
-	render() {
+	render(dt = 1 / 60) {
+		this.u.shutter.value = Math.min(1, 1 / 60 / Math.max(dt, 1e-4));
+		const cam = this.scenePass.camera;
+		cam.updateMatrixWorld();
+		updateCameraRotation(cam);
 		this.pipeline.render();
 	}
 }

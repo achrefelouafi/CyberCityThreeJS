@@ -15,12 +15,25 @@ export const cameraVelocity = Fn(() => {
 	return curr.xy.div(curr.w).sub(prev.xy.div(prev.w));
 })();
 
+// rotation-only view-projection (current inverse + previous), used by the post stack to
+// separate camera-turn motion from camera-travel motion
+export const prevViewProjRot = uniform(new Matrix4());
+export const invViewProjRot = uniform(new Matrix4());
+
 const _vp = new Matrix4();
+const _rot = new Matrix4();
+const rotViewProj = (camera, out) => out.multiplyMatrices(camera.projectionMatrix, _rot.copy(camera.matrixWorldInverse).setPosition(0, 0, 0));
+
+/** Call before rendering a frame. */
+export function updateCameraRotation(camera) {
+	rotViewProj(camera, invViewProjRot.value).invert();
+}
 
 /** Call after rendering a frame. */
 export function storeViewProj(camera) {
 	_vp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
 	prevViewProj.value.copy(_vp);
+	rotViewProj(camera, prevViewProjRot.value);
 }
 
 /** Origin rebasing moved the world by -delta: keep last frame's matrix consistent. */
