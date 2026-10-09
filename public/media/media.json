@@ -1,0 +1,108 @@
+{
+ "clips": [
+  {
+   "id": "holo_medusa",
+   "kind": "holo",
+   "file": "media/holo_medusa.mp4",
+   "seconds": 8,
+   "credit": "NOAA Office of Ocean Exploration and Research (public domain), via Wikimedia Commons - \"Psychedelic Medusa\"",
+   "bytes": 343757
+  },
+  {
+   "id": "holo_jelly_top",
+   "kind": "holo",
+   "file": "media/holo_jelly_top.mp4",
+   "seconds": 8,
+   "credit": "NOAA Office of Ocean Exploration and Research (public domain), via Wikimedia Commons - Jellyfish, Marianas 2016",
+   "bytes": 254742
+  },
+  {
+   "id": "holo_jelly_bell",
+   "kind": "holo",
+   "file": "media/holo_jelly_bell.mp4",
+   "seconds": 8,
+   "credit": "NOAA Office of Ocean Exploration and Research (public domain), via Wikimedia Commons - Jellyfish, Marianas 2016",
+   "bytes": 462947
+  },
+  {
+   "id": "holo_atolla",
+   "kind": "holo",
+   "file": "media/holo_atolla.mp4",
+   "seconds": 7,
+   "credit": "NOAA Office of Ocean Exploration and Research (public domain), via Wikimedia Commons - Hidden Ocean 2016",
+   "bytes": 99442
+  },
+  {
+   "id": "screen_blackhole",
+   "kind": "screen",
+   "file": "media/screen_blackhole.mp4",
+   "seconds": 8,
+   "credit": "NASA's Goddard Space Flight Center / Jeremy Schnittman",
+   "bytes": 861079
+  },
+  {
+   "id": "screen_tos_holo",
+   "kind": "screen",
+   "file": "media/screen_tos_holo.mp4",
+   "seconds": 8,
+   "credit": "Tears of Steel (CC BY 3.0) Blender Foundation | mango.blender.org",
+   "bytes": 674768
+  },
+  {
+   "id": "screen_tos_brain",
+   "kind": "screen",
+   "file": "media/screen_tos_brain.mp4",
+   "seconds": 8,
+   "credit": "Tears of Steel (CC BY 3.0) Blender Foundation | mango.blender.org",
+   "bytes": 119464
+  },
+  {
+   "id": "screen_tos_ship",
+   "kind": "screen",
+   "file": "media/screen_tos_ship.mp4",
+   "seconds": 8,
+   "credit": "Tears of Steel (CC BY 3.0) Blender Foundation | mango.blender.org",
+   "bytes": 356016
+  },
+  {
+   "id": "screen_tos_hacker",
+   "kind": "screen",
+   "file": "media/screen_tos_hacker.mp4",
+   "seconds": 8,
+   "credit": "Tears of Steel (CC BY 3.0) Blender Foundation | mango.blender.org",
+   "bytes": 730727
+  },
+  {
+   "id": "screen_tos_eye",
+   "kind": "screen",
+   "file": "media/screen_tos_eye.mp4",
+   "seconds": 8,
+   "credit": "Tears of Steel (CC BY 3.0) Blender Foundation | mango.blender.org",
+   "bytes": 357447
+  },
+  {
+   "id": "screen_sintel_dragon",
+   "kind": "screen",
+   "file": "media/screen_sintel_dragon.mp4",
+   "seconds": 8,
+   "credit": "Sintel (CC BY 3.0) Blender Foundation | durian.blender.org",
+   "bytes": 602293
+  },
+  {
+   "id": "screen_sintel_face",
+   "kind": "screen",
+   "file": "media/screen_sintel_face.mp4",
+   "seconds": 7,
+   "credit": "Sintel (CC BY 3.0) Blender Foundation | durian.blender.org",
+   "bytes": 243725
+  },
+  {
+   "id": "screen_sintel_city",
+   "kind": "screen",
+   "file": "media/screen_sintel_city.mp4",
+   "seconds": 7,
+   "credit": "Sintel (CC BY 3.0) Blender Foundation | durian.blender.org",
+   "bytes": 827190
+  }
+ ]
+}

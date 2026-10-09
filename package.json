@@ -1,0 +1,28 @@
+{
+  "name": "cybercity",
+  "version": "1.0.0",
+  "description": "Infinite procedural neon city: Blender Geometry Nodes -> Three.js WebGPU",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "assets": "node scripts/pipeline.mjs",
+    "parity": "node scripts/parity.mjs",
+    "media": "node scripts/fetch-media.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@fontsource/monoton": "^5.3.0",
+    "@fontsource/noto-sans-jp": "^5.3.0",
+    "@fontsource/orbitron": "^5.3.0",
+    "@fontsource/rajdhani": "^5.3.0",
+    "lil-gui": "^0.21.0",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4"
+  }
+}

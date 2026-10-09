@@ -1,0 +1,4095 @@
+{
+ "generator": "Blender 5.1.2",
+ "blend": "cybercity.blend",
+ "exportedAt": "2026-10-09T23:53:27",
+ "coordinateSystem": "glTF Y-up; layout computed in Blender space (x, y, z) -> three (x, z, -y)",
+ "city": {
+  "nodeGroup": "CC_CityGenerator",
+  "object": "CC_City",
+  "inputs": [
+   {
+    "name": "Seed",
+    "identifier": "Socket_1",
+    "socketType": "NodeSocketInt",
+    "description": "Global seed - same seed, same city, in Blender and in the browser",
+    "panel": "Grid",
+    "default": 7,
+    "min": 0,
+    "max": 999,
+    "subtype": "NONE"
+   },
+   {
+    "name": "Block Size",
+    "identifier": "Socket_2",
+    "socketType": "NodeSocketFloat",
+    "description": "Size of a city block (m)",
+    "panel": "Grid",
+    "default": 58.0,
+    "min": 30.0,
+    "max": 140.0,
+    "subtype": "DISTANCE"
+   },
+   {
+    "name": "Street Width",
+    "identifier": "Socket_3",
+    "socketType": "NodeSocketFloat",
+    "description": "Width of the street canyons (m)",
+    "panel": "Grid",
+    "default": 28.0,
+    "min": 10.0,
+    "max": 60.0,
+    "subtype": "DISTANCE"
+   },
+   {
+    "name": "Lots Per Side",
+    "identifier": "Socket_4",
+    "socketType": "NodeSocketInt",
+    "description": "Building lots per block side",
+    "panel": "Grid",
+    "default": 2,
+    "min": 1,
+    "max": 3,
+    "subtype": "NONE"
+   },
+   {
+    "name": "Lot Gap",
+    "identifier": "Socket_5",
+    "socketType": "NodeSocketFloat",
+    "description": "Alley between lots (m)",
+    "panel": "Grid",
+    "default": 3.0,
+    "min": 0.0,
+    "max": 10.0,
+    "subtype": "DISTANCE"
+   },
+   {
+    "name": "Max Inset",
+    "identifier": "Socket_6",
+    "socketType": "NodeSocketFloat",
+    "description": "Max setback of a building from its lot edge (m)",
+    "panel": "Grid",
+    "default": 3.0,
+    "min": 0.0,
+    "max": 10.0,
+    "subtype": "DISTANCE"
+   },
+   {
+    "name": "Mega Block Chance",
+    "identifier": "Socket_7",
+    "socketType": "NodeSocketFloat",
+    "description": "Chance a whole block becomes one megastructure",
+    "panel": "Grid",
+    "default": 0.14000000059604645,
+    "min": 0.0,
+    "max": 1.0,
+    "subtype": "FACTOR"
+   },
+   {
+    "name": "Height Min",
+    "identifier": "Socket_9",
+    "socketType": "NodeSocketFloat",
+    "description": "Lowest building (m)",
+    "panel": "Skyline",
+    "default": 42.0,
+    "min": 8.0,
+    "max": 120.0,
+    "subtype": "DISTANCE"
+   },
+   {
+    "name": "Height Max",
+    "identifier": "Socket_10",
+    "socketType": "NodeSocketFloat",
+    "description": "Tallest regular building (m)",
+    "panel": "Skyline",
+    "default": 400.0,
+    "min": 40.0,
+    "max": 700.0,
+    "subtype": "DISTANCE"
+   },
+   {
+    "name": "Height Power",
+    "identifier": "Socket_11",
+    "socketType": "NodeSocketFloat",
+    "description": "Height distribution exponent (higher = more low-rise)",
+    "panel": "Skyline",
+    "default": 1.600000023841858,
+    "min": 0.30000001192092896,
+    "max": 5.0,
+    "subtype": "NONE"
+   },
+   {
+    "name": "District Size",
+    "identifier": "Socket_12",
+    "socketType": "NodeSocketInt",
+    "description": "Size of downtown clusters (blocks)",
+    "panel": "Skyline",
+    "default": 6,
+    "min": 2,
+    "max": 30,
+    "subtype": "NONE"
+   },
+   {
+    "name": "District Floor",
+    "identifier": "Socket_13",
+    "socketType": "NodeSocketFloat",
+    "description": "Height multiplier of the quietest districts",
+    "panel": "Skyline",
+    "default": 0.30000001192092896,
+    "min": 0.0,
+    "max": 1.0,
+    "subtype": "FACTOR"
+   },
+   {
+    "name": "Landmark Chance",
+    "identifier": "Socket_14",
+    "socketType": "NodeSocketFloat",
+    "description": "Chance of a landmark tower (scaled by district)",
+    "panel": "Skyline",
+    "default": 0.07999999821186066,
+    "min": 0.0,
+    "max": 0.5,
+    "subtype": "FACTOR"
+   },
+   {
+    "name": "Landmark Boost",
+    "identifier": "Socket_15",
+    "socketType": "NodeSocketFloat",
+    "description": "Height multiplier of landmarks",
+    "panel": "Skyline",
+    "default": 1.600000023841858,
+    "min": 1.0,
+    "max": 3.0,
+    "subtype": "NONE"
+   },
+   {
+    "name": "Floor Height",
+    "identifier": "Socket_16",
+    "socketType": "NodeSocketFloat",
+    "description": "Storey height; heights snap to whole floors (m)",
+    "panel": "Skyline",
+    "default": 4.0,
+    "min": 2.799999952316284,
+    "max": 6.0,
+    "subtype": "DISTANCE"
+   },
+   {
+    "name": "Tier Chance",
+    "identifier": "Socket_18",
+    "socketType": "NodeSocketFloat",
+    "description": "Chance of stepped setback tiers",
+    "panel": "Massing",
+    "default": 0.6499999761581421,
+    "min": 0.0,
+    "max": 1.0,
+    "subtype": "FACTOR"
+   },
+   {
+    "name": "Setback",
+    "identifier": "Socket_19",
+    "socketType": "NodeSocketFloat",
+    "description": "Footprint reduction per tier",
+    "panel": "Massing",
+    "default": 0.20000000298023224,
+    "min": 0.0,
+    "max": 0.44999998807907104,
+    "subtype": "FACTOR"
+   },
+   {
+    "name": "Roof Clutter",
+    "identifier": "Socket_21",
+    "socketType": "NodeSocketInt",
+    "description": "AC units, tanks, antennas, dishes per roof",
+    "panel": "Details",
+    "default": 4,
+    "min": 0,
+    "max": 8,
+    "subtype": "NONE"
+   },
+   {
+    "name": "Sign Density",
+    "identifier": "Socket_22",
+    "socketType": "NodeSocketInt",
+    "description": "Neon signs per building",
+    "panel": "Details",
+    "default": 12,
+    "min": 0,
+    "max": 16,
+    "subtype": "NONE"
+   },
+   {
+    "name": "Sign Scale",
+    "identifier": "Socket_23",
+    "socketType": "NodeSocketFloat",
+    "description": "Size multiplier of facade signs",
+    "panel": "Details",
+    "default": 1.7000000476837158,
+    "min": 0.30000001192092896,
+    "max": 4.0,
+    "subtype": "NONE"
+   },
+   {
+    "name": "Facade Clutter",
+    "identifier": "Socket_24",
+    "socketType": "NodeSocketInt",
+    "description": "AC units, balconies and pipes per building",
+    "panel": "Details",
+    "default": 14,
+    "min": 0,
+    "max": 40,
+    "subtype": "NONE"
+   },
+   {
+    "name": "Billboard Chance",
+    "identifier": "Socket_25",
+    "socketType": "NodeSocketFloat",
+    "description": "Chance of a giant LED screen on a tall building",
+    "panel": "Details",
+    "default": 0.44999998807907104,
+    "min": 0.0,
+    "max": 1.0,
+    "subtype": "FACTOR"
+   },
+   {
+    "name": "Roof Sign Chance",
+    "identifier": "Socket_26",
+    "socketType": "NodeSocketFloat",
+    "description": "Chance of a rooftop sign",
+    "panel": "Details",
+    "default": 0.2199999988079071,
+    "min": 0.0,
+    "max": 1.0,
+    "subtype": "FACTOR"
+   },
+   {
+    "name": "Trim Chance",
+    "identifier": "Socket_27",
+    "socketType": "NodeSocketFloat",
+    "description": "Chance a building is outlined in neon",
+    "panel": "Details",
+    "default": 0.5,
+    "min": 0.0,
+    "max": 1.0,
+    "subtype": "FACTOR"
+   },
+   {
+    "name": "Skybridge Chance",
+    "identifier": "Socket_28",
+    "socketType": "NodeSocketFloat",
+    "description": "Chance of a skybridge across a street",
+    "panel": "Details",
+    "default": 0.1599999964237213,
+    "min": 0.0,
+    "max": 1.0,
+    "subtype": "FACTOR"
+   },
+   {
+    "name": "Hologram Chance",
+    "identifier": "Socket_29",
+    "socketType": "NodeSocketFloat",
+    "description": "Chance a landmark carries a hologram",
+    "panel": "Details",
+    "default": 0.5,
+    "min": 0.0,
+    "max": 1.0,
+    "subtype": "FACTOR"
+   },
+   {
+    "name": "Trim Thickness",
+    "identifier": "Socket_30",
+    "socketType": "NodeSocketFloat",
+    "description": "Neon tube thickness (m)",
+    "panel": "Details",
+    "default": 0.44999998807907104,
+    "min": 0.05000000074505806,
+    "max": 2.0,
+    "subtype": "DISTANCE"
+   },
+   {
+    "name": "Preview Blocks",
+    "identifier": "Socket_32",
+    "socketType": "NodeSocketInt",
+    "description": "Blender only: blocks per side in the viewport preview",
+    "panel": "Preview",
+    "default": 10,
+    "min": 1,
+    "max": 40,
+    "subtype": "NONE"
+   },
+   {
+    "name": "Preview Origin X",
+    "identifier": "Socket_33",
+    "socketType": "NodeSocketInt",
+    "description": "Blender only: first block X - any window of the infinite city",
+    "panel": "Preview",
+    "default": 0,
+    "min": -100000,
+    "max": 100000,
+    "subtype": "NONE"
+   },
+   {
+    "name": "Preview Origin Y",
+    "identifier": "Socket_34",
+    "socketType": "NodeSocketInt",
+    "description": "Blender only: first block Y",
+    "panel": "Preview",
+    "default": 0,
+    "min": -100000,
+    "max": 100000,
+    "subtype": "NONE"
+   },
+   {
+    "name": "Neon 1",
+    "identifier": "Socket_36",
+    "socketType": "NodeSocketColor",
+    "description": "Neon palette colour (instance attribute 'hue' indexes it)",
+    "panel": "Palette",
+    "default": [
+     1.0,
+     0.07999999821186066,
+     0.5799999833106995,
+     1.0
+    ]
+   },
+   {
+    "name": "Neon 2",
+    "identifier": "Socket_37",
+    "socketType": "NodeSocketColor",
+    "description": "Neon palette colour (instance attribute 'hue' indexes it)",
+    "panel": "Palette",
+    "default": [
+     0.0,
+     0.800000011920929,
+     1.0,
+     1.0
+    ]
+   },
+   {
+    "name": "Neon 3",
+    "identifier": "Socket_38",
+    "socketType": "NodeSocketColor",
+    "description": "Neon palette colour (instance attribute 'hue' indexes it)",
+    "panel": "Palette",
+    "default": [
+     0.550000011920929,
+     0.18000000715255737,
+     1.0,
+     1.0
+    ]
+   },
+   {
+    "name": "Neon 4",
+    "identifier": "Socket_39",
+    "socketType": "NodeSocketColor",
+    "description": "Neon palette colour (instance attribute 'hue' indexes it)",
+    "panel": "Palette",
+    "default": [
+     1.0,
+     0.5,
+     0.07999999821186066,
+     1.0
+    ]
+   }
+  ],
+  "values": {
+   "Seed": 7,
+   "Block Size": 58.0,
+   "Street Width": 28.0,
+   "Lots Per Side": 2,
+   "Lot Gap": 3.0,
+   "Max Inset": 3.0,
+   "Mega Block Chance": 0.14000000059604645,
+   "Height Min": 42.0,
+   "Height Max": 400.0,
+   "Height Power": 1.600000023841858,
+   "District Size": 6,
+   "District Floor": 0.30000001192092896,
+   "Landmark Chance": 0.07999999821186066,
+   "Landmark Boost": 1.600000023841858,
+   "Floor Height": 4.0,
+   "Tier Chance": 0.6499999761581421,
+   "Setback": 0.20000000298023224,
+   "Roof Clutter": 4,
+   "Sign Density": 12,
+   "Sign Scale": 1.7000000476837158,
+   "Facade Clutter": 14,
+   "Billboard Chance": 0.44999998807907104,
+   "Roof Sign Chance": 0.2199999988079071,
+   "Trim Chance": 0.5,
+   "Skybridge Chance": 0.1599999964237213,
+   "Hologram Chance": 0.5,
+   "Trim Thickness": 0.44999998807907104,
+   "Preview Blocks": 10,
+   "Preview Origin X": 0,
+   "Preview Origin Y": 0,
+   "Neon 1": [
+    1.0,
+    0.07999999821186066,
+    0.5799999833106995,
+    1.0
+   ],
+   "Neon 2": [
+    0.0,
+    0.800000011920929,
+    1.0,
+    1.0
+   ],
+   "Neon 3": [
+    0.550000011920929,
+    0.18000000715255737,
+    1.0,
+    1.0
+   ],
+   "Neon 4": [
+    1.0,
+    0.5,
+    0.07999999821186066,
+    1.0
+   ]
+  }
+ },
+ "channels": {
+  "H": 0,
+  "LANDMARK": 1,
+  "TIER": 2,
+  "STYLE": 3,
+  "INSET_X": 4,
+  "INSET_Y": 5,
+  "OFF_X": 6,
+  "OFF_Y": 7,
+  "TRIM": 8,
+  "TRIM_HUE": 9,
+  "WSTYLE": 10,
+  "BSEED": 11,
+  "BB": 12,
+  "BB_SIDE": 13,
+  "BB_Z": 14,
+  "BB_SCALE": 15,
+  "BB_CONTENT": 16,
+  "RSIGN": 17,
+  "RSIGN_ATLAS": 18,
+  "RSIGN_HUE": 19,
+  "HOLO": 20,
+  "HOLO_TYPE": 21,
+  "RSIGN_SIDE": 22,
+  "DIST": 30,
+  "MEGA": 31,
+  "BRX": 32,
+  "BRX_ROW": 33,
+  "BRX_Z": 34,
+  "BRX_HUE": 35,
+  "BRY": 36,
+  "BRY_COL": 37,
+  "BRY_Z": 38,
+  "BRY_HUE": 39,
+  "ROOF_TYPE": 40,
+  "ROOF_PX": 41,
+  "ROOF_PY": 42,
+  "ROOF_ROT": 43,
+  "SIGN_TYPE": 44,
+  "SIGN_SIDE": 45,
+  "SIGN_ALONG": 46,
+  "SIGN_Z": 47,
+  "SIGN_ATLAS": 48,
+  "SIGN_HUE": 49,
+  "SIGN_SCALE": 50,
+  "CLUT_TYPE": 51,
+  "CLUT_SIDE": 52,
+  "CLUT_ALONG": 53,
+  "CLUT_Z": 54
+ },
+ "counts": {
+  "styles": 26,
+  "roof": 6,
+  "atlas": 64,
+  "screens": 8
+ },
+ "pieces": [
+  {
+   "name": "T00_Pillars",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Pillars",
+   "inputs": [
+    {
+     "name": "Pillar Size",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Corner pillar size (fraction of footprint)",
+     "panel": "Shape",
+     "default": 0.07500000298023224,
+     "min": 0.0,
+     "max": 0.25,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Glass Inset",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Curtain wall inset behind the pillars",
+     "panel": "Shape",
+     "default": 0.029999999329447746,
+     "min": 0.0,
+     "max": 0.10000000149011612,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Crown Height",
+     "identifier": "Socket_3",
+     "socketType": "NodeSocketFloat",
+     "description": "Parapet height (fraction of height)",
+     "panel": "Shape",
+     "default": 0.014000000432133675,
+     "min": 0.0,
+     "max": 0.05000000074505806,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Mid Bands",
+     "identifier": "Socket_4",
+     "socketType": "NodeSocketInt",
+     "description": "Horizontal service floors",
+     "panel": "Shape",
+     "default": 3,
+     "min": 0,
+     "max": 8,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Pillar Size": 0.07500000298023224,
+    "Glass Inset": 0.029999999329447746,
+    "Crown Height": 0.014000000432133675,
+    "Mid Bands": 3
+   },
+   "boundsMin": [
+    -0.5099999904632568,
+    0.0,
+    -0.5099999904632568
+   ],
+   "boundsMax": [
+    0.5099999904632568,
+    1.0,
+    0.5099999904632568
+   ],
+   "triangles": 412,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass"
+   ]
+  },
+  {
+   "name": "T01_Fins",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Fins",
+   "inputs": [
+    {
+     "name": "Fins Per Side",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "Vertical fins per facade",
+     "panel": "Shape",
+     "default": 9,
+     "min": 0,
+     "max": 24,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Fin Depth",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.02500000037252903,
+     "min": 0.0,
+     "max": 0.07999999821186066,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Fin Width",
+     "identifier": "Socket_3",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.00800000037997961,
+     "min": 0.0020000000949949026,
+     "max": 0.029999999329447746,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Corner Size",
+     "identifier": "Socket_4",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.05999999865889549,
+     "min": 0.0,
+     "max": 0.20000000298023224,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Fins Per Side": 9,
+    "Fin Depth": 0.02500000037252903,
+    "Fin Width": 0.00800000037997961,
+    "Corner Size": 0.05999999865889549
+   },
+   "boundsMin": [
+    -0.5049999356269836,
+    0.0,
+    -0.5050000548362732
+   ],
+   "boundsMax": [
+    0.5049999356269836,
+    1.0,
+    0.5049999952316284
+   ],
+   "triangles": 1348,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass"
+   ]
+  },
+  {
+   "name": "T02_Octa",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Octa",
+   "inputs": [
+    {
+     "name": "Sides",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "Polygon sides of the shaft",
+     "panel": "Shape",
+     "default": 8,
+     "min": 4,
+     "max": 16,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Rib Size",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.03500000014901161,
+     "min": 0.0,
+     "max": 0.10000000149011612,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Crown Height",
+     "identifier": "Socket_3",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.019999999552965164,
+     "min": 0.0,
+     "max": 0.05999999865889549,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Sides": 8,
+    "Rib Size": 0.03500000014901161,
+    "Crown Height": 0.019999999552965164
+   },
+   "boundsMin": [
+    -0.5174999833106995,
+    0.0,
+    -0.5174999833106995
+   ],
+   "boundsMax": [
+    0.5175000429153442,
+    1.0,
+    0.5174999833106995
+   ],
+   "triangles": 388,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass"
+   ]
+  },
+  {
+   "name": "T03_Round",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Round",
+   "inputs": [
+    {
+     "name": "Segments",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "",
+     "panel": "Shape",
+     "default": 28,
+     "min": 8,
+     "max": 64,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Ribs",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketInt",
+     "description": "",
+     "panel": "Shape",
+     "default": 14,
+     "min": 0,
+     "max": 32,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Rib Size",
+     "identifier": "Socket_3",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.02199999988079071,
+     "min": 0.0,
+     "max": 0.05999999865889549,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Segments": 28,
+    "Ribs": 14,
+    "Rib Size": 0.02199999988079071
+   },
+   "boundsMin": [
+    -0.5199999809265137,
+    0.0,
+    -0.5199999809265137
+   ],
+   "boundsMax": [
+    0.5199999809265137,
+    1.0,
+    0.5199999809265137
+   ],
+   "triangles": 1434,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass"
+   ]
+  },
+  {
+   "name": "T04_Spine",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Spine",
+   "inputs": [
+    {
+     "name": "Core Width",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Width of the service core",
+     "panel": "Shape",
+     "default": 0.25999999046325684,
+     "min": 0.10000000149011612,
+     "max": 0.5,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Core Protrusion",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.03999999910593033,
+     "min": 0.0,
+     "max": 0.15000000596046448,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Neon Slot",
+     "identifier": "Socket_3",
+     "socketType": "NodeSocketBool",
+     "description": "Neon strip running up the core",
+     "panel": "Shape",
+     "default": true
+    }
+   ],
+   "values": {
+    "Core Width": 0.25999999046325684,
+    "Core Protrusion": 0.03999999910593033,
+    "Neon Slot": true
+   },
+   "boundsMin": [
+    -0.5,
+    0.0,
+    -0.5430000424385071
+   ],
+   "boundsMax": [
+    0.5,
+    1.0199999809265137,
+    0.5430000424385071
+   ],
+   "triangles": 60,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "T05_Stack",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Stack",
+   "inputs": [
+    {
+     "name": "Shafts Per Side",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "Protruding utility shafts",
+     "panel": "Shape",
+     "default": 3,
+     "min": 0,
+     "max": 8,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Shaft Size",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.05000000074505806,
+     "min": 0.009999999776482582,
+     "max": 0.15000000596046448,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Shafts Per Side": 3,
+    "Shaft Size": 0.05000000074505806
+   },
+   "boundsMin": [
+    -0.5199999213218689,
+    0.0,
+    -0.5200000405311584
+   ],
+   "boundsMax": [
+    0.5199999213218689,
+    1.0,
+    0.5199999809265137
+   ],
+   "triangles": 468,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass"
+   ]
+  },
+  {
+   "name": "T06_Twist",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Twist",
+   "inputs": [
+    {
+     "name": "Twist",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Rotation from base to top (rad)",
+     "panel": "Shape",
+     "default": 1.100000023841858,
+     "min": 0.0,
+     "max": 3.0,
+     "subtype": "ANGLE"
+    },
+    {
+     "name": "Segments",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketInt",
+     "description": "Vertical resolution of the twist",
+     "panel": "Shape",
+     "default": 28,
+     "min": 4,
+     "max": 64,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Rib Size",
+     "identifier": "Socket_3",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.05000000074505806,
+     "min": 0.0,
+     "max": 0.11999999731779099,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Twist": 1.100000023841858,
+    "Segments": 28,
+    "Rib Size": 0.05000000074505806
+   },
+   "boundsMin": [
+    -0.5020136833190918,
+    0.0,
+    -0.5020136833190918
+   ],
+   "boundsMax": [
+    0.5020136833190918,
+    1.0,
+    0.5020136833190918
+   ],
+   "triangles": 1588,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "T07_Taper",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Taper",
+   "inputs": [
+    {
+     "name": "Taper",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Top width relative to the base",
+     "panel": "Shape",
+     "default": 0.5199999809265137,
+     "min": 0.20000000298023224,
+     "max": 1.0,
+     "subtype": "FACTOR"
+    },
+    {
+     "name": "Pyramid",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Height of the pyramid cap",
+     "panel": "Shape",
+     "default": 0.07000000029802322,
+     "min": 0.0,
+     "max": 0.30000001192092896,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Taper": 0.5199999809265137,
+    "Pyramid": 0.07000000029802322
+   },
+   "boundsMin": [
+    -0.5,
+    0.0,
+    -0.5
+   ],
+   "boundsMax": [
+    0.5,
+    1.1050000190734863,
+    0.5
+   ],
+   "triangles": 330,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Metal",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "T08_Diagrid",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Diagrid",
+   "inputs": [
+    {
+     "name": "Columns",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "Diamonds across a facade",
+     "panel": "Shape",
+     "default": 3,
+     "min": 1,
+     "max": 8,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Rows",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketInt",
+     "description": "Diamonds up the tower",
+     "panel": "Shape",
+     "default": 7,
+     "min": 2,
+     "max": 20,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Strut",
+     "identifier": "Socket_3",
+     "socketType": "NodeSocketFloat",
+     "description": "Strut thickness",
+     "panel": "Shape",
+     "default": 0.014000000432133675,
+     "min": 0.004000000189989805,
+     "max": 0.05000000074505806,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Columns": 3,
+    "Rows": 7,
+    "Strut": 0.014000000432133675
+   },
+   "boundsMin": [
+    -0.5027574896812439,
+    -0.006434023380279541,
+    -0.5027573704719543
+   ],
+   "boundsMax": [
+    0.5027574300765991,
+    1.0064340829849243,
+    0.5027573704719543
+   ],
+   "triangles": 10140,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Metal"
+   ]
+  },
+  {
+   "name": "T09_Ziggurat",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Ziggurat",
+   "inputs": [
+    {
+     "name": "Step Inset",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Inset of each step",
+     "panel": "Shape",
+     "default": 0.17000000178813934,
+     "min": 0.05000000074505806,
+     "max": 0.30000001192092896,
+     "subtype": "FACTOR"
+    },
+    {
+     "name": "Ledge Glow",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketBool",
+     "description": "Neon strips on every ledge",
+     "panel": "Shape",
+     "default": true
+    }
+   ],
+   "values": {
+    "Step Inset": 0.17000000178813934,
+    "Ledge Glow": true
+   },
+   "boundsMin": [
+    -0.5120000243186951,
+    0.0,
+    -0.5120000243186951
+   ],
+   "boundsMax": [
+    0.5120000243186951,
+    1.0,
+    0.5120000243186951
+   ],
+   "triangles": 156,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "T10_Cantilever",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Cantilever",
+   "inputs": [
+    {
+     "name": "Core Size",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Footprint of the core",
+     "panel": "Shape",
+     "default": 0.6000000238418579,
+     "min": 0.30000001192092896,
+     "max": 0.8999999761581421,
+     "subtype": "FACTOR"
+    },
+    {
+     "name": "Pod Height",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Height of each pod (fraction)",
+     "panel": "Shape",
+     "default": 0.10000000149011612,
+     "min": 0.029999999329447746,
+     "max": 0.25,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Core Size": 0.6000000238418579,
+    "Pod Height": 0.10000000149011612
+   },
+   "boundsMin": [
+    -0.5049999356269836,
+    0.0,
+    -0.5049999952316284
+   ],
+   "boundsMax": [
+    0.5049999356269836,
+    1.0,
+    0.5049999952316284
+   ],
+   "triangles": 144,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass"
+   ]
+  },
+  {
+   "name": "T11_LPlan",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_LPlan",
+   "inputs": [
+    {
+     "name": "Wing Width",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Width of each wing",
+     "panel": "Shape",
+     "default": 0.46000000834465027,
+     "min": 0.25,
+     "max": 0.699999988079071,
+     "subtype": "FACTOR"
+    },
+    {
+     "name": "Second Wing Height",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Height of the lower wing",
+     "panel": "Shape",
+     "default": 0.7799999713897705,
+     "min": 0.30000001192092896,
+     "max": 1.0,
+     "subtype": "FACTOR"
+    }
+   ],
+   "values": {
+    "Wing Width": 0.46000000834465027,
+    "Second Wing Height": 0.7799999713897705
+   },
+   "boundsMin": [
+    -0.5099999904632568,
+    0.0,
+    -0.5099999904632568
+   ],
+   "boundsMax": [
+    0.5,
+    1.0,
+    0.5099999904632568
+   ],
+   "triangles": 84,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass"
+   ]
+  },
+  {
+   "name": "T12_Cross",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Cross",
+   "inputs": [
+    {
+     "name": "Arm Width",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Width of the cross arms",
+     "panel": "Shape",
+     "default": 0.41999998688697815,
+     "min": 0.20000000298023224,
+     "max": 0.699999988079071,
+     "subtype": "FACTOR"
+    },
+    {
+     "name": "Core Rise",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Core rises above the arms",
+     "panel": "Shape",
+     "default": 0.05999999865889549,
+     "min": 0.0,
+     "max": 0.20000000298023224,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Arm Width": 0.41999998688697815,
+    "Core Rise": 0.05999999865889549
+   },
+   "boundsMin": [
+    -0.5099999904632568,
+    0.0,
+    -0.5099999308586121
+   ],
+   "boundsMax": [
+    0.5099999904632568,
+    1.062999963760376,
+    0.5099999308586121
+   ],
+   "triangles": 226,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "T13_Kowloon",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Kowloon",
+   "inputs": [
+    {
+     "name": "Module Density",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Protruding room modules per unit facade",
+     "panel": "Shape",
+     "default": 80.0,
+     "min": 0.0,
+     "max": 400.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Seed",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketInt",
+     "description": "",
+     "panel": "Shape",
+     "default": 3,
+     "min": 0,
+     "max": 999,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Module Density": 80.0,
+    "Seed": 3
+   },
+   "boundsMin": [
+    -0.4656442701816559,
+    0.0,
+    -0.4867549538612366
+   ],
+   "boundsMax": [
+    0.48822686076164246,
+    1.0,
+    0.468879371881485
+   ],
+   "triangles": 4224,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Light"
+   ]
+  },
+  {
+   "name": "T14_Arcology",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Arcology",
+   "inputs": [
+    {
+     "name": "Gap",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Height of the sky-garden gaps",
+     "panel": "Shape",
+     "default": 0.05000000074505806,
+     "min": 0.009999999776482582,
+     "max": 0.11999999731779099,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Gap": 0.05000000074505806
+   },
+   "boundsMin": [
+    -0.5,
+    0.0,
+    -0.5
+   ],
+   "boundsMax": [
+    0.5,
+    1.0,
+    0.5
+   ],
+   "triangles": 356,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Light"
+   ]
+  },
+  {
+   "name": "T15_Blade",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Blade",
+   "inputs": [
+    {
+     "name": "Depth",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Slab depth (fraction of footprint)",
+     "panel": "Shape",
+     "default": 0.46000000834465027,
+     "min": 0.20000000298023224,
+     "max": 0.8999999761581421,
+     "subtype": "FACTOR"
+    },
+    {
+     "name": "Screen Width",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Width of the vertical LED screens",
+     "panel": "Shape",
+     "default": 0.30000001192092896,
+     "min": 0.10000000149011612,
+     "max": 0.800000011920929,
+     "subtype": "FACTOR"
+    }
+   ],
+   "values": {
+    "Depth": 0.46000000834465027,
+    "Screen Width": 0.30000001192092896
+   },
+   "boundsMin": [
+    -0.5099999904632568,
+    0.0,
+    -0.24000000953674316
+   ],
+   "boundsMax": [
+    0.5099999904632568,
+    1.0199999809265137,
+    0.24000000953674316
+   ],
+   "triangles": 102,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Screen"
+   ]
+  },
+  {
+   "name": "T16_Deco",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Deco",
+   "inputs": [
+    {
+     "name": "Needle",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Spire needle above the crown",
+     "panel": "Shape",
+     "default": 0.14000000059604645,
+     "min": 0.0,
+     "max": 0.4000000059604645,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Needle": 0.14000000059604645
+   },
+   "boundsMin": [
+    -0.48499998450279236,
+    0.0,
+    -0.48499998450279236
+   ],
+   "boundsMax": [
+    0.48499998450279236,
+    1.2100000381469727,
+    0.48499998450279236
+   ],
+   "triangles": 350,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Metal",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "T17_Hex",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Hex",
+   "inputs": [
+    {
+     "name": "Fin Depth",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.03999999910593033,
+     "min": 0.0,
+     "max": 0.11999999731779099,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Fin Depth": 0.03999999910593033
+   },
+   "boundsMin": [
+    -0.5827092528343201,
+    0.0,
+    -0.5096409916877747
+   ],
+   "boundsMax": [
+    0.5827092528343201,
+    1.0,
+    0.5096409916877747
+   ],
+   "triangles": 232,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "T18_Pagoda",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Pagoda",
+   "inputs": [
+    {
+     "name": "Roofs",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "Flared eave roofs up the tower",
+     "panel": "Shape",
+     "default": 7,
+     "min": 2,
+     "max": 14,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Core",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Core width (fraction of footprint)",
+     "panel": "Shape",
+     "default": 0.6399999856948853,
+     "min": 0.4000000059604645,
+     "max": 0.8500000238418579,
+     "subtype": "FACTOR"
+    }
+   ],
+   "values": {
+    "Roofs": 7,
+    "Core": 0.6399999856948853
+   },
+   "boundsMin": [
+    -0.5197235345840454,
+    0.0,
+    -0.5197235345840454
+   ],
+   "boundsMax": [
+    0.5197235345840454,
+    1.0,
+    0.5197235941886902
+   ],
+   "triangles": 1220,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "T19_Tyrell",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Tyrell",
+   "inputs": [
+    {
+     "name": "Terraces",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "Stepped terraces per tier",
+     "panel": "Shape",
+     "default": 9,
+     "min": 3,
+     "max": 20,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Top Width",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Width at the top (matches the GN setback)",
+     "panel": "Shape",
+     "default": 0.800000011920929,
+     "min": 0.6000000238418579,
+     "max": 1.0,
+     "subtype": "FACTOR"
+    }
+   ],
+   "values": {
+    "Terraces": 9,
+    "Top Width": 0.800000011920929
+   },
+   "boundsMin": [
+    -0.5149999856948853,
+    0.0,
+    -0.5149999856948853
+   ],
+   "boundsMax": [
+    0.5149999856948853,
+    1.0,
+    0.5149999856948853
+   ],
+   "triangles": 564,
+   "materials": [
+    "CC_Glass",
+    "CC_Metal",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "T20_Bundle",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Bundle",
+   "inputs": [
+    {
+     "name": "Segments",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "",
+     "panel": "Shape",
+     "default": 28,
+     "min": 8,
+     "max": 64,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Segments": 28
+   },
+   "boundsMin": [
+    -0.5120000243186951,
+    0.0,
+    -0.5120000243186951
+   ],
+   "boundsMax": [
+    0.5120000243186951,
+    1.0,
+    0.5120000243186951
+   ],
+   "triangles": 4208,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "T21_Exo",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Exo",
+   "inputs": [
+    {
+     "name": "Levels",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "Braced levels of the exoskeleton",
+     "panel": "Shape",
+     "default": 5,
+     "min": 2,
+     "max": 12,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Brace",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Brace thickness",
+     "panel": "Shape",
+     "default": 0.024000000208616257,
+     "min": 0.00800000037997961,
+     "max": 0.05999999865889549,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Levels": 5,
+    "Brace": 0.024000000208616257
+   },
+   "boundsMin": [
+    -0.5069999694824219,
+    -0.011673681437969208,
+    -0.5069999694824219
+   ],
+   "boundsMax": [
+    0.5069999694824219,
+    1.0119999647140503,
+    0.5069999694824219
+   ],
+   "triangles": 2428,
+   "materials": [
+    "CC_Glass",
+    "CC_Metal",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "T22_Halo",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Halo",
+   "inputs": [
+    {
+     "name": "Halo Height",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Height of the ring",
+     "panel": "Shape",
+     "default": 0.800000011920929,
+     "min": 0.4000000059604645,
+     "max": 0.949999988079071,
+     "subtype": "FACTOR"
+    },
+    {
+     "name": "Halo Radius",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.6600000262260437,
+     "min": 0.5,
+     "max": 0.8999999761581421,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Halo Height": 0.800000011920929,
+    "Halo Radius": 0.6600000262260437
+   },
+   "boundsMin": [
+    -0.6880000233650208,
+    0.0,
+    -0.6880000233650208
+   ],
+   "boundsMax": [
+    0.6880000233650208,
+    1.0,
+    0.6880000233650208
+   ],
+   "triangles": 5392,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Metal",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "T23_Capsule",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Capsule",
+   "inputs": [
+    {
+     "name": "Rows",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "Capsules up the tower",
+     "panel": "Shape",
+     "default": 16,
+     "min": 4,
+     "max": 40,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Seed",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketInt",
+     "description": "",
+     "panel": "Shape",
+     "default": 5,
+     "min": 0,
+     "max": 999,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Rows": 16,
+    "Seed": 5
+   },
+   "boundsMin": [
+    -0.5799837112426758,
+    0.0,
+    -0.5799837708473206
+   ],
+   "boundsMax": [
+    0.5799837112426758,
+    1.0081249475479126,
+    0.5799837708473206
+   ],
+   "triangles": 8172,
+   "materials": [
+    "CC_Concrete",
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Light"
+   ]
+  },
+  {
+   "name": "T24_Sail",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Sail",
+   "inputs": [
+    {
+     "name": "Bow",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Curvature of the sail facade",
+     "panel": "Shape",
+     "default": 0.2199999988079071,
+     "min": 0.0,
+     "max": 0.44999998807907104,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Taper",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Width at the top",
+     "panel": "Shape",
+     "default": 0.8199999928474426,
+     "min": 0.6000000238418579,
+     "max": 1.0,
+     "subtype": "FACTOR"
+    }
+   ],
+   "values": {
+    "Bow": 0.2199999988079071,
+    "Taper": 0.8199999928474426
+   },
+   "boundsMin": [
+    -0.5040000081062317,
+    0.0,
+    -0.5349999666213989
+   ],
+   "boundsMax": [
+    0.5040000081062317,
+    1.2999999523162842,
+    0.3186982274055481
+   ],
+   "triangles": 1294,
+   "materials": [
+    "CC_Glass",
+    "CC_Metal",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "T25_Portal",
+   "collection": "CC_Kit_Towers",
+   "nodeGroup": "CC_Tower_Portal",
+   "inputs": [
+    {
+     "name": "Void Bottom",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Bottom of the sky portal",
+     "panel": "Shape",
+     "default": 0.6200000047683716,
+     "min": 0.30000001192092896,
+     "max": 0.8500000238418579,
+     "subtype": "FACTOR"
+    },
+    {
+     "name": "Void Height",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Height of the sky portal",
+     "panel": "Shape",
+     "default": 0.20000000298023224,
+     "min": 0.05000000074505806,
+     "max": 0.3499999940395355,
+     "subtype": "FACTOR"
+    },
+    {
+     "name": "Void Width",
+     "identifier": "Socket_3",
+     "socketType": "NodeSocketFloat",
+     "description": "Width of the sky portal",
+     "panel": "Shape",
+     "default": 0.5199999809265137,
+     "min": 0.20000000298023224,
+     "max": 0.800000011920929,
+     "subtype": "FACTOR"
+    }
+   ],
+   "values": {
+    "Void Bottom": 0.6200000047683716,
+    "Void Height": 0.20000000298023224,
+    "Void Width": 0.5199999809265137
+   },
+   "boundsMin": [
+    -0.5199999809265137,
+    0.0,
+    -0.5199999809265137
+   ],
+   "boundsMax": [
+    0.5199999809265137,
+    1.0,
+    0.5199999809265137
+   ],
+   "triangles": 292,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Light",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "R0_ACUnit",
+   "collection": "CC_Kit_Roof",
+   "nodeGroup": "CC_Roof_ACUnit",
+   "inputs": [
+    {
+     "name": "Size",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketVector",
+     "description": "",
+     "panel": "Shape",
+     "default": [
+      3.0,
+      2.200000047683716,
+      1.600000023841858
+     ],
+     "min": -3.4028234663852886e+38,
+     "max": 3.4028234663852886e+38,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Fans",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketInt",
+     "description": "",
+     "panel": "Shape",
+     "default": 2,
+     "min": 1,
+     "max": 4,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Size": [
+     3.0,
+     2.200000047683716,
+     1.600000023841858
+    ],
+    "Fans": 2
+   },
+   "boundsMin": [
+    -1.5,
+    0.0,
+    -1.100000023841858
+   ],
+   "boundsMax": [
+    1.5,
+    1.71999990940094,
+    1.100000023841858
+   ],
+   "triangles": 164,
+   "materials": [
+    "CC_Facade",
+    "CC_Metal"
+   ]
+  },
+  {
+   "name": "R1_WaterTank",
+   "collection": "CC_Kit_Roof",
+   "nodeGroup": "CC_Roof_WaterTank",
+   "inputs": [
+    {
+     "name": "Radius",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 2.0999999046325684,
+     "min": 0.5,
+     "max": 5.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Height",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 3.5999999046325684,
+     "min": 1.0,
+     "max": 8.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Leg Height",
+     "identifier": "Socket_3",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 2.4000000953674316,
+     "min": 0.5,
+     "max": 6.0,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Radius": 2.0999999046325684,
+    "Height": 3.5999999046325684,
+    "Leg Height": 2.4000000953674316
+   },
+   "boundsMin": [
+    -2.2259998321533203,
+    0.0,
+    -2.2259998321533203
+   ],
+   "boundsMax": [
+    2.2259998321533203,
+    7.5,
+    2.2259998321533203
+   ],
+   "triangles": 232,
+   "materials": [
+    "CC_Facade",
+    "CC_Metal"
+   ]
+  },
+  {
+   "name": "R2_Antenna",
+   "collection": "CC_Kit_Roof",
+   "nodeGroup": "CC_Roof_Antenna",
+   "inputs": [
+    {
+     "name": "Height",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 16.0,
+     "min": 4.0,
+     "max": 40.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Cross Bars",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketInt",
+     "description": "",
+     "panel": "Shape",
+     "default": 3,
+     "min": 0,
+     "max": 8,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Height": 16.0,
+    "Cross Bars": 3
+   },
+   "boundsMin": [
+    -1.100000023841858,
+    0.0,
+    -0.3199999928474426
+   ],
+   "boundsMax": [
+    1.100000023841858,
+    16.56999969482422,
+    0.3199999928474426
+   ],
+   "triangles": 168,
+   "materials": [
+    "CC_Beacon",
+    "CC_Metal"
+   ]
+  },
+  {
+   "name": "R3_Dish",
+   "collection": "CC_Kit_Roof",
+   "nodeGroup": "CC_Roof_Dish",
+   "inputs": [
+    {
+     "name": "Dish Radius",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 1.7000000476837158,
+     "min": 0.5,
+     "max": 4.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Tilt",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.6000000238418579,
+     "min": 0.0,
+     "max": 1.399999976158142,
+     "subtype": "ANGLE"
+    }
+   ],
+   "values": {
+    "Dish Radius": 1.7000000476837158,
+    "Tilt": 0.6000000238418579
+   },
+   "boundsMin": [
+    -1.7000000476837158,
+    0.0,
+    -1.0671082735061646
+   ],
+   "boundsMax": [
+    1.7000000476837158,
+    3.8509669303894043,
+    1.7390328645706177
+   ],
+   "triangles": 140,
+   "materials": [
+    "CC_Facade",
+    "CC_Metal"
+   ]
+  },
+  {
+   "name": "R4_Hut",
+   "collection": "CC_Kit_Roof",
+   "nodeGroup": "CC_Roof_Hut",
+   "inputs": [
+    {
+     "name": "Size",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketVector",
+     "description": "",
+     "panel": "Shape",
+     "default": [
+      5.0,
+      4.0,
+      3.4000000953674316
+     ],
+     "min": -3.4028234663852886e+38,
+     "max": 3.4028234663852886e+38,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Size": [
+     5.0,
+     4.0,
+     3.4000000953674316
+    ]
+   },
+   "boundsMin": [
+    -2.5199999809265137,
+    0.0,
+    -2.0199999809265137
+   ],
+   "boundsMax": [
+    2.5199999809265137,
+    3.4000000953674316,
+    2.049999952316284
+   ],
+   "triangles": 36,
+   "materials": [
+    "CC_Concrete",
+    "CC_Light",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "R5_Vents",
+   "collection": "CC_Kit_Roof",
+   "nodeGroup": "CC_Roof_Vents",
+   "inputs": [
+    {
+     "name": "Count",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "",
+     "panel": "Shape",
+     "default": 3,
+     "min": 1,
+     "max": 6,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Radius",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.5,
+     "min": 0.20000000298023224,
+     "max": 1.2000000476837158,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Count": 3,
+    "Radius": 0.5
+   },
+   "boundsMin": [
+    -2.25,
+    0.0,
+    -0.7311959266662598
+   ],
+   "boundsMax": [
+    2.25,
+    3.5500001907348633,
+    0.7311959266662598
+   ],
+   "triangles": 312,
+   "materials": [
+    "CC_Facade",
+    "CC_Metal"
+   ]
+  },
+  {
+   "name": "L0_Spire",
+   "collection": "CC_Kit_Landmark",
+   "nodeGroup": "CC_Landmark_Spire",
+   "inputs": [
+    {
+     "name": "Rings",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "Neon rings around the spire",
+     "panel": "Shape",
+     "default": 4,
+     "min": 0,
+     "max": 10,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Taper",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Top radius (fraction)",
+     "panel": "Shape",
+     "default": 0.05999999865889549,
+     "min": 0.0,
+     "max": 0.5,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Rings": 4,
+    "Taper": 0.05999999865889549
+   },
+   "boundsMin": [
+    -0.4619397521018982,
+    0.11400000005960464,
+    -0.4619397521018982
+   ],
+   "boundsMax": [
+    0.4619397521018982,
+    1.5,
+    0.4619397819042206
+   ],
+   "triangles": 476,
+   "materials": [
+    "CC_Beacon",
+    "CC_Metal",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "S0_Blade",
+   "collection": "CC_Kit_Signs",
+   "nodeGroup": "CC_Sign_Blade",
+   "inputs": [
+    {
+     "name": "Size",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketVector",
+     "description": "Reach from wall (X), thickness (Y), height (Z)",
+     "panel": "Shape",
+     "default": [
+      2.5999999046325684,
+      0.5,
+      9.0
+     ],
+     "min": -3.4028234663852886e+38,
+     "max": 3.4028234663852886e+38,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Wall Gap",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.44999998807907104,
+     "min": 0.0,
+     "max": 2.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Tube",
+     "identifier": "Socket_3",
+     "socketType": "NodeSocketFloat",
+     "description": "Neon outline thickness",
+     "panel": "Shape",
+     "default": 0.07000000029802322,
+     "min": 0.0,
+     "max": 0.20000000298023224,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Size": [
+     2.5999999046325684,
+     0.5,
+     9.0
+    ],
+    "Wall Gap": 0.44999998807907104,
+    "Tube": 0.07000000029802322
+   },
+   "boundsMin": [
+    -0.3250000476837158,
+    -0.034999847412109375,
+    -0.0
+   ],
+   "boundsMax": [
+    0.3250000476837158,
+    9.03499984741211,
+    3.0849997997283936
+   ],
+   "triangles": 136,
+   "materials": [
+    "CC_Metal",
+    "CC_Neon",
+    "CC_Sign"
+   ]
+  },
+  {
+   "name": "S1_Wide",
+   "collection": "CC_Kit_Signs",
+   "nodeGroup": "CC_Sign_Wide",
+   "inputs": [
+    {
+     "name": "Size",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketVector",
+     "description": "Width (X), depth (Y), height (Z)",
+     "panel": "Shape",
+     "default": [
+      8.0,
+      0.3499999940395355,
+      2.5999999046325684
+     ],
+     "min": -3.4028234663852886e+38,
+     "max": 3.4028234663852886e+38,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Tube",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Neon outline thickness",
+     "panel": "Shape",
+     "default": 0.07999999821186066,
+     "min": 0.0,
+     "max": 0.20000000298023224,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Size": [
+     8.0,
+     0.3499999940395355,
+     2.5999999046325684
+    ],
+    "Tube": 0.07999999821186066
+   },
+   "boundsMin": [
+    -4.039999961853027,
+    -0.039999961853027344,
+    -0.0
+   ],
+   "boundsMax": [
+    4.039999961853027,
+    2.6399998664855957,
+    0.429999977350235
+   ],
+   "triangles": 62,
+   "materials": [
+    "CC_Metal",
+    "CC_Neon",
+    "CC_Sign"
+   ]
+  },
+  {
+   "name": "S2_Tall",
+   "collection": "CC_Kit_Signs",
+   "nodeGroup": "CC_Sign_Tall",
+   "inputs": [
+    {
+     "name": "Size",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketVector",
+     "description": "Width (X), depth (Y), height (Z)",
+     "panel": "Shape",
+     "default": [
+      2.799999952316284,
+      0.3499999940395355,
+      10.0
+     ],
+     "min": -3.4028234663852886e+38,
+     "max": 3.4028234663852886e+38,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Tube",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Neon outline thickness",
+     "panel": "Shape",
+     "default": 0.07999999821186066,
+     "min": 0.0,
+     "max": 0.20000000298023224,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Size": [
+     2.799999952316284,
+     0.3499999940395355,
+     10.0
+    ],
+    "Tube": 0.07999999821186066
+   },
+   "boundsMin": [
+    -1.4399999380111694,
+    -0.039999961853027344,
+    -0.0
+   ],
+   "boundsMax": [
+    1.4399999380111694,
+    10.039999961853027,
+    0.429999977350235
+   ],
+   "triangles": 62,
+   "materials": [
+    "CC_Metal",
+    "CC_Neon",
+    "CC_Sign"
+   ]
+  },
+  {
+   "name": "S3_Roof",
+   "collection": "CC_Kit_Signs",
+   "nodeGroup": "CC_Sign_Roof",
+   "inputs": [
+    {
+     "name": "Size",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketVector",
+     "description": "",
+     "panel": "Shape",
+     "default": [
+      14.0,
+      0.4000000059604645,
+      4.599999904632568
+     ],
+     "min": -3.4028234663852886e+38,
+     "max": 3.4028234663852886e+38,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Leg Height",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 3.0,
+     "min": 0.5,
+     "max": 8.0,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Size": [
+     14.0,
+     0.4000000059604645,
+     4.599999904632568
+    ],
+    "Leg Height": 3.0
+   },
+   "boundsMin": [
+    -7.0,
+    0.0,
+    -0.210000678896904
+   ],
+   "boundsMax": [
+    7.0,
+    7.600000381469727,
+    1.5
+   ],
+   "triangles": 52,
+   "materials": [
+    "CC_Metal",
+    "CC_Sign"
+   ]
+  },
+  {
+   "name": "S4_Disc",
+   "collection": "CC_Kit_Signs",
+   "nodeGroup": "CC_Sign_Disc",
+   "inputs": [
+    {
+     "name": "Radius",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 2.4000000953674316,
+     "min": 0.5,
+     "max": 6.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Arm",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Bracket length from the wall",
+     "panel": "Shape",
+     "default": 1.600000023841858,
+     "min": 0.20000000298023224,
+     "max": 4.0,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Radius": 2.4000000953674316,
+    "Arm": 1.600000023841858
+   },
+   "boundsMin": [
+    -0.16000011563301086,
+    -0.1399996280670166,
+    -0.0
+   ],
+   "boundsMax": [
+    0.16000011563301086,
+    4.939999580383301,
+    6.740000247955322
+   ],
+   "triangles": 332,
+   "materials": [
+    "CC_Metal",
+    "CC_Neon",
+    "CC_Sign"
+   ]
+  },
+  {
+   "name": "S5_Banner",
+   "collection": "CC_Kit_Signs",
+   "nodeGroup": "CC_Sign_Banner",
+   "inputs": [
+    {
+     "name": "Size",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketVector",
+     "description": "Width, depth, height of the hanging LED banner",
+     "panel": "Shape",
+     "default": [
+      3.200000047683716,
+      0.25,
+      22.0
+     ],
+     "min": -3.4028234663852886e+38,
+     "max": 3.4028234663852886e+38,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Size": [
+     3.200000047683716,
+     0.25,
+     22.0
+    ]
+   },
+   "boundsMin": [
+    -1.9000000953674316,
+    0.0,
+    -0.0
+   ],
+   "boundsMax": [
+    1.9000000953674316,
+    22.075000762939453,
+    1.3350003957748413
+   ],
+   "triangles": 40,
+   "materials": [
+    "CC_Metal",
+    "CC_Sign"
+   ]
+  },
+  {
+   "name": "B0_Billboard",
+   "collection": "CC_Kit_Screens",
+   "nodeGroup": "CC_Screen_Billboard",
+   "inputs": [
+    {
+     "name": "Size",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketVector",
+     "description": "Screen width, depth, height",
+     "panel": "Shape",
+     "default": [
+      16.0,
+      0.6000000238418579,
+      9.0
+     ],
+     "min": -3.4028234663852886e+38,
+     "max": 3.4028234663852886e+38,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Wall Gap",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.800000011920929,
+     "min": 0.0,
+     "max": 3.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Bezel",
+     "identifier": "Socket_3",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.3499999940395355,
+     "min": 0.0,
+     "max": 1.0,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Size": [
+     16.0,
+     0.6000000238418579,
+     9.0
+    ],
+    "Wall Gap": 0.800000011920929,
+    "Bezel": 0.3499999940395355
+   },
+   "boundsMin": [
+    -8.350000381469727,
+    -0.34999990463256836,
+    -8.940696716308594e-08
+   ],
+   "boundsMax": [
+    8.350000381469727,
+    9.350000381469727,
+    1.410000205039978
+   ],
+   "triangles": 62,
+   "materials": [
+    "CC_Metal",
+    "CC_Screen"
+   ]
+  },
+  {
+   "name": "A0_Awning",
+   "collection": "CC_Kit_Dressing",
+   "nodeGroup": "CC_Street_Awning",
+   "inputs": [
+    {
+     "name": "Size",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketVector",
+     "description": "Width, reach, thickness (m)",
+     "panel": "Shape",
+     "default": [
+      6.0,
+      2.200000047683716,
+      0.30000001192092896
+     ],
+     "min": -3.4028234663852886e+38,
+     "max": 3.4028234663852886e+38,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Size": [
+     6.0,
+     2.200000047683716,
+     0.30000001192092896
+    ]
+   },
+   "boundsMin": [
+    -3.0,
+    -0.1899999976158142,
+    -0.0
+   ],
+   "boundsMax": [
+    3.0,
+    1.850000023841858,
+    2.2799999713897705
+   ],
+   "triangles": 50,
+   "materials": [
+    "CC_Light",
+    "CC_Metal",
+    "CC_Neon",
+    "CC_Sign"
+   ]
+  },
+  {
+   "name": "C0_Helipad",
+   "collection": "CC_Kit_Dressing",
+   "nodeGroup": "CC_Crown_Helipad",
+   "inputs": [
+    {
+     "name": "Pad Radius",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.36000001430511475,
+     "min": 0.20000000298023224,
+     "max": 0.47999998927116394,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Pad Radius": 0.36000001430511475
+   },
+   "boundsMin": [
+    -0.3499999940395355,
+    0.0,
+    -0.3499999940395355
+   ],
+   "boundsMax": [
+    0.3499999940395355,
+    0.09000000357627869,
+    0.3499999940395355
+   ],
+   "triangles": 448,
+   "materials": [
+    "CC_Concrete",
+    "CC_Light",
+    "CC_Metal",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "C1_Lattice",
+   "collection": "CC_Kit_Dressing",
+   "nodeGroup": "CC_Crown_Lattice",
+   "inputs": [
+    {
+     "name": "Height",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Height (fraction of roof width)",
+     "panel": "Shape",
+     "default": 0.44999998807907104,
+     "min": 0.15000000596046448,
+     "max": 1.0,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Height": 0.44999998807907104
+   },
+   "boundsMin": [
+    -0.41499999165534973,
+    -0.0058992281556129456,
+    -0.41499999165534973
+   ],
+   "boundsMax": [
+    0.41499999165534973,
+    0.9900000095367432,
+    0.41499999165534973
+   ],
+   "triangles": 442,
+   "materials": [
+    "CC_Beacon",
+    "CC_Metal",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "C2_Deco",
+   "collection": "CC_Kit_Dressing",
+   "nodeGroup": "CC_Crown_Deco",
+   "inputs": [
+    {
+     "name": "Step Height",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.07000000029802322,
+     "min": 0.019999999552965164,
+     "max": 0.20000000298023224,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Step Height": 0.07000000029802322
+   },
+   "boundsMin": [
+    -0.4410000145435333,
+    0.0,
+    -0.4410000145435333
+   ],
+   "boundsMax": [
+    0.4410000145435333,
+    0.9100000262260437,
+    0.4410000145435333
+   ],
+   "triangles": 258,
+   "materials": [
+    "CC_Facade",
+    "CC_Metal",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "C3_Antennas",
+   "collection": "CC_Kit_Dressing",
+   "nodeGroup": "CC_Crown_Antennas",
+   "inputs": [
+    {
+     "name": "Masts",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "",
+     "panel": "Shape",
+     "default": 7,
+     "min": 1,
+     "max": 16,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Seed",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketInt",
+     "description": "",
+     "panel": "Shape",
+     "default": 3,
+     "min": 0,
+     "max": 999,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Masts": 7,
+    "Seed": 3
+   },
+   "boundsMin": [
+    -0.38999998569488525,
+    0.0,
+    -0.38999998569488525
+   ],
+   "boundsMax": [
+    0.38999998569488525,
+    0.6827287077903748,
+    0.38999998569488525
+   ],
+   "triangles": 516,
+   "materials": [
+    "CC_Beacon",
+    "CC_Metal"
+   ]
+  },
+  {
+   "name": "C4_LEDRing",
+   "collection": "CC_Kit_Dressing",
+   "nodeGroup": "CC_Crown_LEDRing",
+   "inputs": [
+    {
+     "name": "Band Height",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Height of the LED crown (fraction of roof width)",
+     "panel": "Shape",
+     "default": 0.1599999964237213,
+     "min": 0.05000000074505806,
+     "max": 0.4000000059604645,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Band Height": 0.1599999964237213
+   },
+   "boundsMin": [
+    -0.48100000619888306,
+    -0.004999999888241291,
+    -0.48100000619888306
+   ],
+   "boundsMax": [
+    0.48100000619888306,
+    0.19199998676776886,
+    0.48100000619888306
+   ],
+   "triangles": 116,
+   "materials": [
+    "CC_Metal",
+    "CC_Neon",
+    "CC_Screen"
+   ]
+  },
+  {
+   "name": "C5_Dome",
+   "collection": "CC_Kit_Dressing",
+   "nodeGroup": "CC_Crown_Dome",
+   "inputs": [],
+   "values": {},
+   "boundsMin": [
+    -0.46000000834465027,
+    -1.0578157016993828e-08,
+    -0.46000000834465027
+   ],
+   "boundsMax": [
+    0.46000000834465027,
+    0.6800000071525574,
+    0.46000000834465027
+   ],
+   "triangles": 818,
+   "materials": [
+    "CC_Beacon",
+    "CC_Glass",
+    "CC_Metal",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "D0_LedgeBox",
+   "collection": "CC_Kit_Dressing",
+   "nodeGroup": "CC_Dress_LedgeBox",
+   "inputs": [
+    {
+     "name": "Thickness",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Slab thickness (m)",
+     "panel": "Shape",
+     "default": 0.44999998807907104,
+     "min": 0.10000000149011612,
+     "max": 2.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Reach",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Projection beyond the facade (fraction)",
+     "panel": "Shape",
+     "default": 0.029999999329447746,
+     "min": 0.0,
+     "max": 0.10000000149011612,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Thickness": 0.44999998807907104,
+    "Reach": 0.029999999329447746
+   },
+   "boundsMin": [
+    -0.5169999599456787,
+    0.0,
+    -0.5169999599456787
+   ],
+   "boundsMax": [
+    0.5169999599456787,
+    0.44999998807907104,
+    0.5169999599456787
+   ],
+   "triangles": 24,
+   "materials": [
+    "CC_Facade",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "D1_LedgeRound",
+   "collection": "CC_Kit_Dressing",
+   "nodeGroup": "CC_Dress_LedgeRound",
+   "inputs": [
+    {
+     "name": "Thickness",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Slab thickness (m)",
+     "panel": "Shape",
+     "default": 0.44999998807907104,
+     "min": 0.10000000149011612,
+     "max": 2.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Reach",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Projection beyond the facade (fraction)",
+     "panel": "Shape",
+     "default": 0.029999999329447746,
+     "min": 0.0,
+     "max": 0.10000000149011612,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Thickness": 0.44999998807907104,
+    "Reach": 0.029999999329447746
+   },
+   "boundsMin": [
+    -0.5169999599456787,
+    0.0,
+    -0.5169999599456787
+   ],
+   "boundsMax": [
+    0.5169999599456787,
+    0.44999998807907104,
+    0.5169999599456787
+   ],
+   "triangles": 312,
+   "materials": [
+    "CC_Facade",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "D2_LedgeOcta",
+   "collection": "CC_Kit_Dressing",
+   "nodeGroup": "CC_Dress_LedgeOcta",
+   "inputs": [
+    {
+     "name": "Thickness",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Slab thickness (m)",
+     "panel": "Shape",
+     "default": 0.44999998807907104,
+     "min": 0.10000000149011612,
+     "max": 2.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Reach",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Projection beyond the facade (fraction)",
+     "panel": "Shape",
+     "default": 0.029999999329447746,
+     "min": 0.0,
+     "max": 0.10000000149011612,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Thickness": 0.44999998807907104,
+    "Reach": 0.029999999329447746
+   },
+   "boundsMin": [
+    -0.5169999599456787,
+    0.0,
+    -0.5169999599456787
+   ],
+   "boundsMax": [
+    0.5169999599456787,
+    0.44999998807907104,
+    0.5169999599456787
+   ],
+   "triangles": 56,
+   "materials": [
+    "CC_Facade",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "D3_LedgeHex",
+   "collection": "CC_Kit_Dressing",
+   "nodeGroup": "CC_Dress_LedgeHex",
+   "inputs": [
+    {
+     "name": "Thickness",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Slab thickness (m)",
+     "panel": "Shape",
+     "default": 0.44999998807907104,
+     "min": 0.10000000149011612,
+     "max": 2.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Reach",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Projection beyond the facade (fraction)",
+     "panel": "Shape",
+     "default": 0.029999999329447746,
+     "min": 0.0,
+     "max": 0.10000000149011612,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Thickness": 0.44999998807907104,
+    "Reach": 0.029999999329447746
+   },
+   "boundsMin": [
+    -0.5611612796783447,
+    0.0,
+    -0.48597994446754456
+   ],
+   "boundsMax": [
+    0.5611612796783447,
+    0.44999998807907104,
+    0.48597994446754456
+   ],
+   "triangles": 40,
+   "materials": [
+    "CC_Facade",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "X0_Koi",
+   "collection": "CC_Kit_HoloArt",
+   "nodeGroup": "CC_HoloArt_Koi",
+   "inputs": [],
+   "values": {},
+   "boundsMin": [
+    -0.6000000238418579,
+    -0.23816590011119843,
+    -0.31999996304512024
+   ],
+   "boundsMax": [
+    0.5747802257537842,
+    0.33856403827667236,
+    0.22775709629058838
+   ],
+   "triangles": 1228,
+   "materials": [
+    "CC_Holo"
+   ]
+  },
+  {
+   "name": "X1_Whale",
+   "collection": "CC_Kit_HoloArt",
+   "nodeGroup": "CC_HoloArt_Whale",
+   "inputs": [],
+   "values": {},
+   "boundsMin": [
+    -0.6620000004768372,
+    -0.14842389523983002,
+    -0.45008760690689087
+   ],
+   "boundsMax": [
+    0.5199999809265137,
+    0.14842389523983002,
+    0.45008760690689087
+   ],
+   "triangles": 1912,
+   "materials": [
+    "CC_Holo"
+   ]
+  },
+  {
+   "name": "X2_Torii",
+   "collection": "CC_Kit_HoloArt",
+   "nodeGroup": "CC_HoloArt_Torii",
+   "inputs": [],
+   "values": {},
+   "boundsMin": [
+    -0.5899999737739563,
+    0.0,
+    -0.05000000074505806
+   ],
+   "boundsMax": [
+    0.5899999737739563,
+    0.98158198595047,
+    0.05000000074505806
+   ],
+   "triangles": 400,
+   "materials": [
+    "CC_Holo"
+   ]
+  },
+  {
+   "name": "P0_Sidewalk",
+   "collection": "CC_Kit_Street",
+   "nodeGroup": "CC_Street_Sidewalk",
+   "inputs": [
+    {
+     "name": "Curb Lip",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Bevel lip ratio",
+     "panel": "Shape",
+     "default": 0.029999999329447746,
+     "min": 0.0,
+     "max": 0.10000000149011612,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Curb Lip": 0.029999999329447746
+   },
+   "boundsMin": [
+    -0.5149999856948853,
+    0.0,
+    -0.5149999856948853
+   ],
+   "boundsMax": [
+    0.5149999856948853,
+    1.0,
+    0.5149999856948853
+   ],
+   "triangles": 24,
+   "materials": [
+    "CC_Concrete"
+   ]
+  },
+  {
+   "name": "P1_Lamp",
+   "collection": "CC_Kit_Street",
+   "nodeGroup": "CC_Street_Lamp",
+   "inputs": [
+    {
+     "name": "Height",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 7.5,
+     "min": 3.0,
+     "max": 14.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Arm",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 2.0,
+     "min": 0.5,
+     "max": 4.0,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Height": 7.5,
+    "Arm": 2.0
+   },
+   "boundsMin": [
+    -0.20999999344348907,
+    0.0,
+    -0.1141267791390419
+   ],
+   "boundsMax": [
+    0.20999999344348907,
+    7.559999942779541,
+    2.549999952316284
+   ],
+   "triangles": 72,
+   "materials": [
+    "CC_Light",
+    "CC_Metal"
+   ]
+  },
+  {
+   "name": "P2_Skybridge",
+   "collection": "CC_Kit_Street",
+   "nodeGroup": "CC_Street_Skybridge",
+   "inputs": [
+    {
+     "name": "Width",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 6.0,
+     "min": 2.0,
+     "max": 12.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Height",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 4.199999809265137,
+     "min": 2.0,
+     "max": 8.0,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Width": 6.0,
+    "Height": 4.199999809265137
+   },
+   "boundsMin": [
+    -0.5,
+    0.0,
+    -3.049999952316284
+   ],
+   "boundsMax": [
+    0.5,
+    4.199999809265137,
+    3.049999952316284
+   ],
+   "triangles": 72,
+   "materials": [
+    "CC_Facade",
+    "CC_Glass",
+    "CC_Light",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "P3_NeonBar",
+   "collection": "CC_Kit_Street",
+   "nodeGroup": "CC_NeonBar",
+   "inputs": [
+    {
+     "name": "Segments",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "",
+     "panel": "Shape",
+     "default": 1,
+     "min": 1,
+     "max": 4,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Segments": 1
+   },
+   "boundsMin": [
+    -0.5,
+    0.0,
+    -0.5
+   ],
+   "boundsMax": [
+    0.5,
+    1.0,
+    0.5
+   ],
+   "triangles": 12,
+   "materials": [
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "H0_Diamond",
+   "collection": "CC_Kit_Holo",
+   "nodeGroup": "CC_Holo_Diamond",
+   "inputs": [
+    {
+     "name": "Stretch",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 1.7999999523162842,
+     "min": 0.5,
+     "max": 4.0,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Stretch": 1.7999999523162842
+   },
+   "boundsMin": [
+    -0.5,
+    0.0,
+    -0.5
+   ],
+   "boundsMax": [
+    0.5,
+    1.7999999523162842,
+    0.5
+   ],
+   "triangles": 16,
+   "materials": [
+    "CC_Holo"
+   ]
+  },
+  {
+   "name": "H1_Rings",
+   "collection": "CC_Kit_Holo",
+   "nodeGroup": "CC_Holo_Rings",
+   "inputs": [
+    {
+     "name": "Rings",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "",
+     "panel": "Shape",
+     "default": 3,
+     "min": 1,
+     "max": 6,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Tube",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.02500000037252903,
+     "min": 0.004999999888241291,
+     "max": 0.10000000149011612,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Rings": 3,
+    "Tube": 0.02500000037252903
+   },
+   "boundsMin": [
+    -0.5249999761581421,
+    0.08531352877616882,
+    -0.5249999761581421
+   ],
+   "boundsMax": [
+    0.5249999761581421,
+    0.9146864414215088,
+    0.5249999761581421
+   ],
+   "triangles": 3092,
+   "materials": [
+    "CC_Holo"
+   ]
+  },
+  {
+   "name": "F0_WallAC",
+   "collection": "CC_Kit_Facade",
+   "nodeGroup": "CC_Facade_AC",
+   "inputs": [
+    {
+     "name": "Size",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketVector",
+     "description": "",
+     "panel": "Shape",
+     "default": [
+      1.100000023841858,
+      0.699999988079071,
+      0.800000011920929
+     ],
+     "min": -3.4028234663852886e+38,
+     "max": 3.4028234663852886e+38,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Size": [
+     1.100000023841858,
+     0.699999988079071,
+     0.800000011920929
+    ]
+   },
+   "boundsMin": [
+    -0.550000011920929,
+    -1.2999999523162842,
+    -0.0
+   ],
+   "boundsMax": [
+    0.550000011920929,
+    0.4000000059604645,
+    0.7399999499320984
+   ],
+   "triangles": 96,
+   "materials": [
+    "CC_Facade",
+    "CC_Metal"
+   ]
+  },
+  {
+   "name": "F1_Balcony",
+   "collection": "CC_Kit_Facade",
+   "nodeGroup": "CC_Facade_Balcony",
+   "inputs": [
+    {
+     "name": "Width",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 4.0,
+     "min": 1.5,
+     "max": 8.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Depth",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 1.2999999523162842,
+     "min": 0.5,
+     "max": 3.0,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Width": 4.0,
+    "Depth": 1.2999999523162842
+   },
+   "boundsMin": [
+    -2.0250000953674316,
+    -0.09000000357627869,
+    -0.0
+   ],
+   "boundsMax": [
+    2.0250000953674316,
+    1.1200000047683716,
+    1.2999999523162842
+   ],
+   "triangles": 60,
+   "materials": [
+    "CC_Concrete",
+    "CC_Metal",
+    "CC_Neon"
+   ]
+  },
+  {
+   "name": "F2_Pipes",
+   "collection": "CC_Kit_Facade",
+   "nodeGroup": "CC_Facade_Pipes",
+   "inputs": [
+    {
+     "name": "Count",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketInt",
+     "description": "",
+     "panel": "Shape",
+     "default": 3,
+     "min": 1,
+     "max": 6,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Radius",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 0.18000000715255737,
+     "min": 0.05000000074505806,
+     "max": 0.5,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Count": 3,
+    "Radius": 0.18000000715255737
+   },
+   "boundsMin": [
+    -0.9300000071525574,
+    0.0,
+    -0.05399999022483826
+   ],
+   "boundsMax": [
+    0.9300000071525574,
+    1.0,
+    0.414000004529953
+   ],
+   "triangles": 204,
+   "materials": [
+    "CC_Facade",
+    "CC_Metal"
+   ]
+  },
+  {
+   "name": "V0_HoverCar",
+   "collection": "CC_Kit_Vehicles",
+   "nodeGroup": "CC_HoverCar",
+   "inputs": [
+    {
+     "name": "Length",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "Overall length (m)",
+     "panel": "Body",
+     "default": 5.699999809265137,
+     "min": 3.5,
+     "max": 8.0,
+     "subtype": "DISTANCE"
+    },
+    {
+     "name": "Width",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "Overall width (m)",
+     "panel": "Body",
+     "default": 2.25,
+     "min": 1.5,
+     "max": 3.200000047683716,
+     "subtype": "DISTANCE"
+    },
+    {
+     "name": "Height",
+     "identifier": "Socket_3",
+     "socketType": "NodeSocketFloat",
+     "description": "Body height (m)",
+     "panel": "Body",
+     "default": 1.159999966621399,
+     "min": 0.800000011920929,
+     "max": 2.0,
+     "subtype": "DISTANCE"
+    },
+    {
+     "name": "Ride Height",
+     "identifier": "Socket_4",
+     "socketType": "NodeSocketFloat",
+     "description": "Belly clearance (m)",
+     "panel": "Body",
+     "default": 0.3799999952316284,
+     "min": 0.10000000149011612,
+     "max": 1.0,
+     "subtype": "DISTANCE"
+    },
+    {
+     "name": "Squareness",
+     "identifier": "Socket_5",
+     "socketType": "NodeSocketFloat",
+     "description": "Super-ellipse exponent of the cross section",
+     "panel": "Body",
+     "default": 4.800000190734863,
+     "min": 2.0,
+     "max": 8.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Resolution",
+     "identifier": "Socket_6",
+     "socketType": "NodeSocketInt",
+     "description": "Loft rings along the body",
+     "panel": "Body",
+     "default": 44,
+     "min": 12,
+     "max": 96,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Subdivision",
+     "identifier": "Socket_7",
+     "socketType": "NodeSocketInt",
+     "description": "",
+     "panel": "Body",
+     "default": 1,
+     "min": 0,
+     "max": 3,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Canopy Start",
+     "identifier": "Socket_9",
+     "socketType": "NodeSocketFloat",
+     "description": "Canopy start along the body (0 = tail)",
+     "panel": "Canopy",
+     "default": 0.36000001430511475,
+     "min": 0.0,
+     "max": 1.0,
+     "subtype": "FACTOR"
+    },
+    {
+     "name": "Canopy End",
+     "identifier": "Socket_10",
+     "socketType": "NodeSocketFloat",
+     "description": "Canopy end along the body",
+     "panel": "Canopy",
+     "default": 0.7300000190734863,
+     "min": 0.0,
+     "max": 1.0,
+     "subtype": "FACTOR"
+    },
+    {
+     "name": "Canopy Height",
+     "identifier": "Socket_11",
+     "socketType": "NodeSocketFloat",
+     "description": "Canopy bulge (m)",
+     "panel": "Canopy",
+     "default": 0.30000001192092896,
+     "min": 0.10000000149011612,
+     "max": 0.8999999761581421,
+     "subtype": "DISTANCE"
+    },
+    {
+     "name": "Canopy Width",
+     "identifier": "Socket_12",
+     "socketType": "NodeSocketFloat",
+     "description": "Canopy width (fraction of body)",
+     "panel": "Canopy",
+     "default": 0.6000000238418579,
+     "min": 0.30000001192092896,
+     "max": 0.949999988079071,
+     "subtype": "FACTOR"
+    },
+    {
+     "name": "Pod Radius",
+     "identifier": "Socket_14",
+     "socketType": "NodeSocketFloat",
+     "description": "Ducted fan radius (m)",
+     "panel": "Propulsion",
+     "default": 0.36000001430511475,
+     "min": 0.20000000298023224,
+     "max": 0.800000011920929,
+     "subtype": "DISTANCE"
+    },
+    {
+     "name": "Pod Spread",
+     "identifier": "Socket_15",
+     "socketType": "NodeSocketFloat",
+     "description": "Pod position along the body (fraction)",
+     "panel": "Propulsion",
+     "default": 0.3199999928474426,
+     "min": 0.15000000596046448,
+     "max": 0.44999998807907104,
+     "subtype": "FACTOR"
+    },
+    {
+     "name": "Thruster Radius",
+     "identifier": "Socket_16",
+     "socketType": "NodeSocketFloat",
+     "description": "Rear thruster radius (m)",
+     "panel": "Propulsion",
+     "default": 0.15000000596046448,
+     "min": 0.07999999821186066,
+     "max": 0.4000000059604645,
+     "subtype": "DISTANCE"
+    },
+    {
+     "name": "Spoiler",
+     "identifier": "Socket_17",
+     "socketType": "NodeSocketBool",
+     "description": "Raised rear wing on struts (off = integrated ducktail)",
+     "panel": "Propulsion",
+     "default": false
+    },
+    {
+     "name": "Waist Line",
+     "identifier": "Socket_19",
+     "socketType": "NodeSocketFloat",
+     "description": "Height of the neon waist line on the cross section",
+     "panel": "Lights",
+     "default": -0.1599999964237213,
+     "min": -0.800000011920929,
+     "max": 0.800000011920929,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Strip Width",
+     "identifier": "Socket_20",
+     "socketType": "NodeSocketFloat",
+     "description": "Neon strip thickness",
+     "panel": "Lights",
+     "default": 0.05000000074505806,
+     "min": 0.004999999888241291,
+     "max": 0.20000000298023224,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Length": 5.699999809265137,
+    "Width": 2.25,
+    "Height": 1.159999966621399,
+    "Ride Height": 0.3799999952316284,
+    "Squareness": 4.800000190734863,
+    "Resolution": 44,
+    "Subdivision": 1,
+    "Canopy Start": 0.36000001430511475,
+    "Canopy End": 0.7300000190734863,
+    "Canopy Height": 0.30000001192092896,
+    "Canopy Width": 0.6000000238418579,
+    "Pod Radius": 0.36000001430511475,
+    "Pod Spread": 0.3199999928474426,
+    "Thruster Radius": 0.15000000596046448,
+    "Spoiler": false,
+    "Waist Line": -0.1599999964237213,
+    "Strip Width": 0.05000000074505806
+   },
+   "boundsMin": [
+    -3.0299999713897705,
+    0.24500000476837158,
+    -1.2450001239776611
+   ],
+   "boundsMax": [
+    2.7174413204193115,
+    1.4442553520202637,
+    1.2450001239776611
+   ],
+   "triangles": 23264,
+   "materials": [
+    "CC_CarGlass",
+    "CC_CarNeon",
+    "CC_CarPaint",
+    "CC_CarTrim",
+    "CC_HeadLight",
+    "CC_TailLight",
+    "CC_Thruster"
+   ]
+  },
+  {
+   "name": "V1_Traffic",
+   "collection": "CC_Kit_Vehicles",
+   "nodeGroup": "CC_Vehicle_Traffic",
+   "inputs": [
+    {
+     "name": "Length",
+     "identifier": "Socket_1",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 4.599999904632568,
+     "min": 3.0,
+     "max": 9.0,
+     "subtype": "NONE"
+    },
+    {
+     "name": "Width",
+     "identifier": "Socket_2",
+     "socketType": "NodeSocketFloat",
+     "description": "",
+     "panel": "Shape",
+     "default": 1.899999976158142,
+     "min": 1.2000000476837158,
+     "max": 3.0,
+     "subtype": "NONE"
+    }
+   ],
+   "values": {
+    "Length": 4.599999904632568,
+    "Width": 1.899999976158142
+   },
+   "boundsMin": [
+    -2.3299999237060547,
+    0.20000000298023224,
+    -0.949999988079071
+   ],
+   "boundsMax": [
+    2.3299999237060547,
+    1.399999976158142,
+    0.949999988079071
+   ],
+   "triangles": 68,
+   "materials": [
+    "CC_CarGlass",
+    "CC_CarNeon",
+    "CC_CarPaint",
+    "CC_HeadLight",
+    "CC_TailLight"
+   ]
+  }
+ ],
+ "materials": {
+  "CC_Beacon": {
+   "role": 8,
+   "baseColor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.30000001192092896,
+   "emissive": [
+    1.0,
+    0.05000000074505806,
+    0.05000000074505806
+   ],
+   "emissiveStrength": 40.0
+  },
+  "CC_CarGlass": {
+   "role": 11,
+   "baseColor": [
+    0.004999999888241291,
+    0.006000000052154064,
+    0.009999999776482582
+   ],
+   "metallic": 0.20000000298023224,
+   "roughness": 0.03999999910593033,
+   "emissive": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "emissiveStrength": 0.0
+  },
+  "CC_CarNeon": {
+   "role": 12,
+   "baseColor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.30000001192092896,
+   "emissive": [
+    0.0,
+    0.8999999761581421,
+    1.0
+   ],
+   "emissiveStrength": 25.0
+  },
+  "CC_CarPaint": {
+   "role": 10,
+   "baseColor": [
+    0.012000000104308128,
+    0.012000000104308128,
+    0.01600000075995922
+   ],
+   "metallic": 0.8999999761581421,
+   "roughness": 0.2800000011920929,
+   "emissive": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "emissiveStrength": 0.0
+  },
+  "CC_CarTrim": {
+   "role": 16,
+   "baseColor": [
+    0.006000000052154064,
+    0.006000000052154064,
+    0.00800000037997961
+   ],
+   "metallic": 0.4000000059604645,
+   "roughness": 0.5,
+   "emissive": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "emissiveStrength": 0.0
+  },
+  "CC_Concrete": {
+   "role": 4,
+   "baseColor": [
+    0.05000000074505806,
+    0.05000000074505806,
+    0.057999998331069946
+   ],
+   "metallic": 0.0,
+   "roughness": 0.8500000238418579,
+   "emissive": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "emissiveStrength": 0.0
+  },
+  "CC_Facade": {
+   "role": 0,
+   "baseColor": [
+    0.019999999552965164,
+    0.020999999716877937,
+    0.02800000086426735
+   ],
+   "metallic": 0.3499999940395355,
+   "roughness": 0.6200000047683716,
+   "emissive": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "emissiveStrength": 0.0
+  },
+  "CC_Glass": {
+   "role": 1,
+   "baseColor": [
+    0.009999999776482582,
+    0.012000000104308128,
+    0.019999999552965164
+   ],
+   "metallic": 0.8500000238418579,
+   "roughness": 0.10000000149011612,
+   "emissive": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "emissiveStrength": 6.0,
+   "windowGrid": {
+    "Floor Height": 4.0,
+    "Window Width": 2.5999999046325684,
+    "Lit Ratio": 0.3799999952316284
+   }
+  },
+  "CC_HeadLight": {
+   "role": 13,
+   "baseColor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.20000000298023224,
+   "emissive": [
+    0.8500000238418579,
+    0.949999988079071,
+    1.0
+   ],
+   "emissiveStrength": 40.0
+  },
+  "CC_Holo": {
+   "role": 9,
+   "baseColor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.30000001192092896,
+   "emissive": [
+    0.20000000298023224,
+    0.8999999761581421,
+    1.0
+   ],
+   "emissiveStrength": 4.0
+  },
+  "CC_Light": {
+   "role": 7,
+   "baseColor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.30000001192092896,
+   "emissive": [
+    1.0,
+    0.7799999713897705,
+    0.550000011920929
+   ],
+   "emissiveStrength": 12.0
+  },
+  "CC_Metal": {
+   "role": 3,
+   "baseColor": [
+    0.04500000178813934,
+    0.04699999839067459,
+    0.054999999701976776
+   ],
+   "metallic": 1.0,
+   "roughness": 0.3199999928474426,
+   "emissive": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "emissiveStrength": 0.0
+  },
+  "CC_Neon": {
+   "role": 2,
+   "baseColor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.4000000059604645,
+   "emissive": [
+    1.0,
+    0.10000000149011612,
+    0.6000000238418579
+   ],
+   "emissiveStrength": 18.0
+  },
+  "CC_Screen": {
+   "role": 6,
+   "baseColor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.20000000298023224,
+   "emissive": [
+    0.4000000059604645,
+    0.20000000298023224,
+    1.0
+   ],
+   "emissiveStrength": 6.0
+  },
+  "CC_Sign": {
+   "role": 5,
+   "baseColor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.30000001192092896,
+   "emissive": [
+    0.0,
+    0.8500000238418579,
+    1.0
+   ],
+   "emissiveStrength": 9.0
+  },
+  "CC_TailLight": {
+   "role": 14,
+   "baseColor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.20000000298023224,
+   "emissive": [
+    1.0,
+    0.019999999552965164,
+    0.18000000715255737
+   ],
+   "emissiveStrength": 30.0
+  },
+  "CC_Thruster": {
+   "role": 15,
+   "baseColor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.20000000298023224,
+   "emissive": [
+    0.3499999940395355,
+    0.75,
+    1.0
+   ],
+   "emissiveStrength": 30.0
+  }
+ },
+ "palette": [
+  [
+   1.0,
+   0.08,
+   0.58
+  ],
+  [
+   0.0,
+   0.8,
+   1.0
+  ],
+  [
+   0.55,
+   0.18,
+   1.0
+  ],
+  [
+   1.0,
+   0.5,
+   0.08
+  ]
+ ]
+}
