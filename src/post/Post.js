@@ -6,7 +6,10 @@
 //     -> chromatic aberration
 //     -> exposure / filmic tone map / sRGB          (manual renderOutput)
 //     -> grade: contrast, saturation, split-tone shadows/highlights
-//     -> FXAA -> vignette + film grain
+//     -> SMAA | FXAA | off -> sharpen -> vignette + film grain
+//
+// Structural options (AA mode, depth of field, sharpen) live in `opts`; changing one
+// calls rebuild(). Everything else is a uniform and can be tweaked live.
 
 import { RenderPipeline, Color, ACESFilmicToneMapping, SRGBColorSpace, CanvasTexture } from 'three/webgpu';
 import {
@@ -19,6 +22,8 @@ import { motionBlur } from 'three/addons/tsl/display/MotionBlur.js';
 import { ssr } from 'three/addons/tsl/display/SSRNode.js';
 import { chromaticAberration } from 'three/addons/tsl/display/ChromaticAberrationNode.js';
 import { fxaa } from 'three/addons/tsl/display/FXAANode.js';
+import { smaa } from 'three/addons/tsl/display/SMAANode.js';
+import { sharpen } from 'three/addons/tsl/display/SharpenNode.js';
 import { dof } from 'three/addons/tsl/display/DepthOfFieldNode.js';
 
 let _dirt = null;
@@ -86,21 +91,25 @@ export class Post {
 			highlights: uniform(new Color(1.0, 0.82, 0.9)),
 			splitAmount: uniform(0.45),
 			vignette: uniform(0.42),
-			grain: uniform(0.045),
+			grain: uniform(0.035),
+			sharpen: uniform(0.35),
 			fade: uniform(1.0),
 		};
+		this.opts = { aa: 'SMAA', dof: true, sharpen: true };
+		this._tail = []; // passes owned by the current graph, disposed on rebuild
 		this.pipeline = new RenderPipeline(renderer);
 		this.pipeline.outputColorTransform = false;
 		this.scenePass = pass(scene, camera);
 		// MRT: beauty, motion vectors, view normals and a reflect mask (wet asphalt writes it)
 		this.scenePass.setMRT(mrt({ output, velocity, normal: normalView, reflect: vec2(0, 1) }));
+		this.buildPasses();
 		this.build();
 	}
 
-	build() {
+	/** Passes created once (their uniforms are bound to GUI controls). */
+	buildPasses() {
 		const U = this.u;
 		const color = this.scenePass.getTextureNode('output');
-		const vel = this.scenePass.getTextureNode('velocity');
 		const refl = this.scenePass.getTextureNode('reflect');
 
 		// screen-space reflections on the wet streets (half res, roughness-blurred)
@@ -111,12 +120,7 @@ export class Post {
 		this.ssr.maxDistance.value = 160;
 		this.ssr.thickness.value = 1.2;
 		this.ssr.quality.value = 0.4;
-		const wet = convertToTexture(vec4(color.rgb.add(this.ssr.rgb.mul(refl.r).mul(U.ssr)), 1));
-
-		// camera motion blur (velocity is an NDC delta; convert to UV space)
-		const moved = motionBlur(wet, vel.xy.mul(vec2(0.5, -0.5)).mul(U.motionBlur), int(10));
-		// cinematic depth of field (driven per shot by the director: focus on the car)
-		const blurred = dof(moved, this.scenePass.getViewZNode(), U.dofFocus, U.dofRange, U.dofAmount);
+		this.wet = convertToTexture(vec4(color.rgb.add(this.ssr.rgb.mul(refl.r).mul(U.ssr)), 1));
 
 		// bloom on the HDR beauty
 		this.bloom = bloom(color, 0.55, 0.38, 1.15);
@@ -126,19 +130,39 @@ export class Post {
 		this.haze = bloom(color, 1.0, 1.0, 0.35);
 		const viewZ = this.scenePass.getViewZNode();
 		const far = smoothstep(30.0, 600.0, viewZ.negate());
-		const hazeGlow = this.haze.rgb.mul(far).mul(U.haze); // only distant light scatters into the haze
+		this.hazeGlow = this.haze.rgb.mul(far).mul(U.haze); // only distant light scatters into the haze
 
 		// anamorphic streaks: bright pass -> two widening horizontal blurs at 1/4 res
 		const bright = max(color.rgb.sub(U.anaThreshold), vec3(0)).mul(0.5);
 		const s1 = gaussianBlur(vec4(bright, 1), vec2(2.5, 0), 10, { resolutionScale: 0.25 });
 		const s2 = gaussianBlur(s1, vec2(7.0, 0), 10, { resolutionScale: 0.25 });
-		const streaks = s1.rgb.mul(0.4).add(s2.rgb).mul(U.anaTint).mul(U.anamorphic);
+		this.streaks = s1.rgb.mul(0.4).add(s2.rgb).mul(U.anaTint).mul(U.anamorphic);
 
 		// lens dirt (baked once to a texture), lit only where the bloom is
 		const smudge = texture(lensDirtTexture(), uv()).r;
-		const dirt = this.haze.rgb.mul(0.5).add(this.bloom.rgb).mul(smudge).mul(U.lensDirt);
+		this.dirt = this.haze.rgb.mul(0.5).add(this.bloom.rgb).mul(smudge).mul(U.lensDirt);
+	}
 
-		const hdr = vec4(blurred.rgb.add(this.bloom.rgb.mul(U.bloomMix)).add(streaks).add(hazeGlow).add(dirt), 1);
+	/** (Re)assemble the graph from the current `opts`. */
+	build() {
+		const U = this.u, o = this.opts;
+		for (const n of this._tail) n.dispose?.();
+		this._tail = [];
+		const own = (n) => (this._tail.push(n), n);
+		const vel = this.scenePass.getTextureNode('velocity');
+
+		// camera motion blur (velocity is an NDC delta; convert to UV space)
+		const moved = motionBlur(this.wet, vel.xy.mul(vec2(0.5, -0.5)).mul(U.motionBlur), int(10));
+		// cinematic depth of field (driven per shot by the director: focus on the car).
+		// The DOF composite swaps out-of-focus pixels for its half-res blur even at bokeh 0,
+		// so it is faded out entirely whenever the amount is zero (driving, wide shots).
+		let blurred = moved;
+		if (o.dof) {
+			const d = own(dof(moved, this.scenePass.getViewZNode(), U.dofFocus, U.dofRange, U.dofAmount));
+			blurred = mix(moved, d, clamp(U.dofAmount.mul(2), 0, 1));
+		}
+
+		const hdr = vec4(blurred.rgb.add(this.bloom.rgb.mul(U.bloomMix)).add(this.streaks).add(this.hazeGlow).add(this.dirt), 1);
 		const aberrated = chromaticAberration(hdr, U.ca, vec2(0.5, 0.5), 1.08); // r186: center=null is not handled
 
 		// tone map + sRGB, then grade in display space
@@ -152,7 +176,9 @@ export class Post {
 			c.assign(mix(c, c.mul(split.mul(1.25)), U.splitAmount.mul(float(1).sub(l.mul(0.6)))));
 			return vec4(clamp(c, 0, 1), 1);
 		})();
-		const aa = fxaa(graded);
+		let aa = o.aa === 'SMAA' ? own(smaa(graded)) : o.aa === 'FXAA' ? own(fxaa(graded)) : graded;
+		// contrast-adaptive sharpening (0 = off .. 1 = strong) recovers detail lost to AA / upscaling
+		if (o.sharpen) aa = own(sharpen(aa, float(2).sub(clamp(U.sharpen, 0, 1).mul(2))));
 		const final = Fn(() => {
 			const p = uv().sub(0.5);
 			const vig = float(1).sub(smoothstep(0.25, 0.95, length(p.mul(vec2(1.0, 0.82)))).mul(U.vignette));

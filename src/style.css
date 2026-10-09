@@ -68,14 +68,24 @@ html, body {
 .badge .arrow { color: var(--neon-a); }
 .stats { margin-top: 8px; font-size: 12px; color: var(--dim); white-space: pre; line-height: 1.5; }
 
-.hud-bl { position: absolute; left: 26px; bottom: 24px; display: flex; gap: 28px; }
+/* bottom bar: gauges | hint + credits | key legend. A grid, so the three columns
+   can never overlap; the centre column shrinks and wraps instead. */
+.hud-bottom {
+	position: absolute; left: 26px; right: 26px; bottom: 14px;
+	display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; gap: 28px;
+}
+.hud-bl { display: flex; gap: 28px; padding-bottom: 8px; }
+.hud-bc { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
 .gauge { display: flex; align-items: baseline; gap: 8px; }
 .gauge .label { font-size: 12px; color: var(--dim); letter-spacing: 0.3em; }
 .gauge .value { font-family: 'Orbitron', sans-serif; font-size: 34px; font-weight: 700; color: var(--ink); min-width: 3.2ch; text-align: right; }
 .gauge .unit { font-size: 12px; color: var(--neon-b); }
 
-.hud-br { position: absolute; right: 26px; bottom: 26px; }
-.keys { display: flex; gap: 16px; font-size: 12px; color: var(--dim); letter-spacing: 0.15em; }
+.hud-br { padding-bottom: 10px; }
+.keys {
+	display: grid; grid-template-columns: repeat(3, auto); gap: 3px 16px; justify-content: end;
+	font-size: 11px; color: var(--dim); letter-spacing: 0.12em; white-space: nowrap;
+}
 .keys b { color: var(--neon-b); font-weight: 700; }
 
 .rec {
@@ -86,7 +96,7 @@ html, body {
 .rec.hidden { display: none; }
 
 .shot {
-	position: absolute; left: 50%; bottom: 70px; transform: translateX(-50%);
+	min-height: 1em;
 	font-family: 'Orbitron', sans-serif; font-size: 11px; letter-spacing: 0.5em; color: var(--dim);
 	opacity: 0; transition: opacity 0.6s ease;
 }
@@ -129,11 +139,26 @@ html, body {
 	--font-size: 12px;
 	--width: 300px;
 }
-.lil-gui.root { position: fixed; top: 92px; right: 16px; max-height: calc(100vh - 150px); overflow-y: auto; }
+.lil-gui.lil-root { position: fixed; top: 160px; right: 16px; max-height: calc(100vh - 270px); overflow-y: auto; z-index: 5; }
+
+.settings-btn {
+	pointer-events: auto; cursor: pointer; margin-top: 8px;
+	font-family: 'Orbitron', sans-serif; font-size: 10px; letter-spacing: 0.25em;
+	padding: 7px 12px; color: var(--ink); background: rgba(30, 8, 40, 0.6);
+	border: 1px solid rgba(255, 47, 160, 0.55); text-shadow: inherit;
+}
+.settings-btn b { color: var(--neon-a); margin-left: 6px; }
+.settings-btn:hover, .settings-btn.on { background: rgba(255, 47, 160, 0.25); border-color: var(--neon-a); }
 .lil-gui.hidden-panel { display: none; }
 
-@media (max-width: 700px) {
+@media (max-width: 1100px) {
+	.keys { grid-template-columns: repeat(2, auto); }
+}
+@media (max-width: 860px) {
 	.keys { display: none; }
+	.hud-bottom { grid-template-columns: auto minmax(0, 1fr); }
+}
+@media (max-width: 700px) {
 	.badge { font-size: 8px; }
 	.brand .title { font-size: 18px; }
 	.brand .kanji { font-size: 22px; }
@@ -141,14 +166,14 @@ html, body {
 }
 
 .credits {
-	position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); max-width: 80vw;
+	max-width: 100%;
 	font-size: 9px; letter-spacing: 0.12em; color: rgba(170, 190, 220, 0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 .hint {
-	position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%);
-	font-family: 'Orbitron', sans-serif; font-size: 11px; letter-spacing: 0.35em; color: var(--neon-b);
-	text-shadow: 0 0 10px rgba(24, 214, 255, 0.6); animation: hintPulse 2.4s ease-in-out infinite; white-space: nowrap;
+	max-width: 100%;
+	font-family: 'Orbitron', sans-serif; font-size: 11px; letter-spacing: 0.3em; line-height: 1.6; color: var(--neon-b);
+	text-shadow: 0 0 10px rgba(24, 214, 255, 0.6); animation: hintPulse 2.4s ease-in-out infinite;
 }
 @keyframes hintPulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.95; } }
 @media (max-width: 700px) { .hint { font-size: 8px; letter-spacing: 0.2em; } }

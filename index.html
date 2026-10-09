@@ -17,20 +17,25 @@
 		<div class="hud-tr">
 			<div class="badge">BLENDER GEOMETRY NODES <span class="arrow">→</span> THREE.JS WEBGPU</div>
 			<div class="stats" id="hud-stats"></div>
+			<button id="settings-btn" class="settings-btn" type="button" title="Post-processing, quality and city generator (G)">⚙ SETTINGS <b>G</b></button>
 		</div>
-		<div class="hud-bl">
-			<div class="gauge"><span class="label">SPD</span><span id="hud-speed" class="value">000</span><span class="unit">KM/H</span></div>
-			<div class="gauge"><span class="label">ALT</span><span id="hud-alt" class="value">000</span><span class="unit">M</span></div>
-		</div>
-		<div class="hud-br">
-			<div class="keys">
-				<span><b>WASD</b> fly</span><span><b>SPACE/Q</b> up/down</span><span><b>V</b> view</span><span><b>C</b> fly ⇄ cinematic</span><span><b>O</b> orbit</span><span><b>T</b> title</span><span><b>L</b> letterbox</span><span><b>H</b> hide UI</span><span><b>G</b> controls</span><span><b>R</b> record</span><span><b>P</b> photo</span><span><b>SHIFT</b> boost</span>
+		<div class="hud-bottom">
+			<div class="hud-bl">
+				<div class="gauge"><span class="label">SPD</span><span id="hud-speed" class="value">000</span><span class="unit">KM/H</span></div>
+				<div class="gauge"><span class="label">ALT</span><span id="hud-alt" class="value">000</span><span class="unit">M</span></div>
+			</div>
+			<div class="hud-bc">
+				<div id="shot" class="shot"></div>
+				<div id="hint" class="hint">C OR W A S D — TAKE THE WHEEL</div>
+				<div id="hud-credits" class="credits"></div>
+			</div>
+			<div class="hud-br">
+				<div class="keys">
+					<span><b>WASD</b> fly</span><span><b>SPACE/Q</b> up/down</span><span><b>SHIFT</b> boost</span><span><b>V</b> view</span><span><b>C</b> fly ⇄ cinematic</span><span><b>O</b> orbit</span><span><b>T</b> title</span><span><b>L</b> letterbox</span><span><b>G</b> settings</span><span><b>H</b> hide UI</span><span><b>R</b> record</span><span><b>P</b> photo</span>
+				</div>
 			</div>
 		</div>
-		<div id="hint" class="hint">C OR W A S D — TAKE THE WHEEL</div>
-		<div id="hud-credits" class="credits"></div>
 		<div id="rec" class="rec hidden">● REC <span id="rec-time">00:00</span></div>
-		<div id="shot" class="shot"></div>
 	</div>
 
 	<div id="loader" class="loader">

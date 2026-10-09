@@ -52,7 +52,12 @@ async function main() {
 // what kills the Z-fighting on distant facades, signs and trims
 	const renderer = new WebGPURenderer({ canvas, antialias: false, powerPreference: 'high-performance', reversedDepthBuffer: true });
 	await renderer.init();
-	const quality = { scale: Math.min(window.devicePixelRatio, +(params.get('dpr') ?? 1.25)) };
+	// render scale = CSS px -> render px. Auto mode adapts it between min and max to hold
+	// ~60 fps; max > 1 supersamples on fast GPUs (the cleanest anti-aliasing there is).
+	const quality = {
+		scale: Math.min(Math.max(window.devicePixelRatio, 1), +(params.get('dpr') ?? 2)),
+		auto: !params.has('dpr'), min: 0.85, max: Math.max(1.5, Math.min(window.devicePixelRatio, 2)),
+	};
 	renderer.setPixelRatio(quality.scale);
 	const W = () => Math.max(window.innerWidth, 320), H = () => Math.max(window.innerHeight, 180);
 	renderer.setSize(W(), H());
@@ -196,6 +201,8 @@ async function main() {
 	const U = (u, key = 'value') => ({ obj: u, key });
 	const camState = { mode: 'cinematic', shot: 'chase', cut: () => director._next() };
 	const flight = { speed: ap.cruise, boost: false };
+	const rebuildPost = () => post.build();
+	const refreshGui = () => gui?.controllersRecursive().forEach((c) => c.updateDisplay());
 	const gui = buildGui({
 		manifest, values, onCityChange,
 		groups: {
@@ -241,29 +248,73 @@ async function main() {
 				{ ...U(trafficUniforms.lights), min: 0, max: 3, step: 0.01, name: 'traffic lights' },
 				{ ...U(trafficUniforms.speed), min: 0, max: 3, step: 0.01, name: 'traffic speed' },
 			],
-			'Post': [
+			'Post · Image Quality': [
+				{ obj: quality, key: 'scale', min: 0.5, max: 2, step: 0.05, name: 'resolution scale', onChange: (v) => { quality.auto = false; renderer.setPixelRatio(v); refreshGui(); } },
+				{ obj: quality, key: 'auto', name: 'auto resolution (hold 60 fps)' },
+				{ obj: quality, key: 'min', min: 0.5, max: 1.5, step: 0.05, name: 'auto: min scale' },
+				{ obj: quality, key: 'max', min: 0.75, max: 2, step: 0.05, name: 'auto: max scale' },
+				{ obj: post.opts, key: 'aa', options: ['SMAA', 'FXAA', 'off'], name: 'anti-aliasing', onChange: rebuildPost },
+				{ obj: post.opts, key: 'sharpen', name: 'sharpen pass', onChange: rebuildPost },
+				{ ...U(post.u.sharpen), min: 0, max: 1, step: 0.01, name: 'sharpen amount' },
+				{ ...U(post.u.motionBlur), min: 0, max: 2, step: 0.01, name: 'motion blur' },
+				{ ...U(post.u.grain), min: 0, max: 0.2, step: 0.001, name: 'film grain' },
+				{ ...U(post.u.ca), min: 0, max: 2, step: 0.01, name: 'chromatic aberration' },
+			],
+			'Post · Depth of Field': [
+				{ obj: post.opts, key: 'dof', name: 'enabled', onChange: rebuildPost },
+				{ obj: cinema, key: 'dof', min: 0, max: 4, step: 0.01, name: 'bokeh size (close shots)' },
+				{ obj: cinema, key: 'dofRange', min: 1, max: 40, step: 0.1, name: 'focus range m' },
+				{ obj: cinema, key: 'letterbox', name: 'letterbox 2.39:1' },
+			],
+			'Post · Glow & Lens': [
 				{ ...U(post.bloom.strength), min: 0, max: 3, step: 0.01, name: 'bloom' },
 				{ ...U(post.bloom.radius), min: 0, max: 1, step: 0.01, name: 'bloom radius' },
 				{ ...U(post.bloom.threshold), min: 0, max: 4, step: 0.01, name: 'bloom threshold' },
-				{ ...U(post.u.anamorphic), min: 0, max: 3, step: 0.01, name: 'anamorphic' },
+				{ ...U(post.u.anamorphic), min: 0, max: 3, step: 0.01, name: 'anamorphic streaks' },
+				{ ...U(post.u.anaThreshold), min: 0, max: 10, step: 0.05, name: 'streak threshold' },
 				{ ...U(post.u.haze), min: 0, max: 2, step: 0.01, name: 'haze glow' },
-				{ ...U(post.u.motionBlur), min: 0, max: 2, step: 0.01, name: 'motion blur' },
+				{ ...U(post.u.lensDirt), min: 0, max: 2, step: 0.01, name: 'lens dirt' },
 				{ ...U(post.u.ssr), min: 0, max: 4, step: 0.01, name: 'SSR (wet streets)' },
-				{ ...U(post.u.ca), min: 0, max: 2, step: 0.01, name: 'chromatic aberration' },
+			],
+			'Post · Grade': [
 				{ ...U(post.u.contrast), min: 0.5, max: 2, step: 0.01, name: 'contrast' },
 				{ ...U(post.u.saturation), min: 0, max: 2, step: 0.01, name: 'saturation' },
 				{ ...U(post.u.splitAmount), min: 0, max: 1, step: 0.01, name: 'split tone' },
 				{ ...U(post.u.vignette), min: 0, max: 1, step: 0.01, name: 'vignette' },
-				{ ...U(post.u.lensDirt), min: 0, max: 2, step: 0.01, name: 'lens dirt' },
-				{ obj: cinema, key: 'dof', min: 0, max: 4, step: 0.01, name: 'depth of field (close shots)' },
-				{ obj: cinema, key: 'dofRange', min: 1, max: 40, step: 0.1, name: 'focus range m' },
-				{ obj: cinema, key: 'letterbox', name: 'letterbox 2.39:1' },
-				{ ...U(post.u.grain), min: 0, max: 0.2, step: 0.001, name: 'grain' },
-				{ obj: quality, key: 'scale', min: 0.5, max: 2, step: 0.05, name: 'resolution scale', onChange: (v) => renderer.setPixelRatio(v) },
+			],
+			'City · Streaming': [
+				{ obj: city, key: 'radius', min: 1, max: 6, step: 1, name: 'draw distance (chunks)', onChange: () => city.fill(camera) },
+				{ obj: city, key: 'midRadius', min: 0, max: 4, step: 1, name: 'mid-detail ring', onChange: () => (city.dirty = true) },
+				{ obj: city, key: 'detailRadius', min: 0, max: 3, step: 1, name: 'full-detail ring', onChange: () => (city.dirty = true) },
+				{ obj: camera, key: 'fov', min: 35, max: 100, step: 1, name: 'camera FOV', onChange: () => camera.updateProjectionMatrix() },
 			],
 		},
 	});
 	applyLook(look.name);
+
+	// post settings are a per-viewer preference: remember them across reloads
+	const postFolders = gui.folders.filter((f) => f._title.startsWith('Post'));
+	const POST_KEY = 'neokyoto.post.v1';
+	const postDefaults = postFolders.map((f) => f.save());
+	try {
+		const saved = JSON.parse(localStorage.getItem(POST_KEY) ?? 'null');
+		if (saved) postFolders.forEach((f, i) => saved[i] && f.load(saved[i]));
+	} catch { /* storage blocked or stale: keep defaults */ }
+	const savePost = () => { try { localStorage.setItem(POST_KEY, JSON.stringify(postFolders.map((f) => f.save()))); } catch { /* ignore */ } };
+	postFolders.forEach((f) => f.onFinishChange(savePost));
+	postFolders[0].add({ reset: () => {
+		postFolders.forEach((f, i) => f.load(postDefaults[i]));
+		try { localStorage.removeItem(POST_KEY); } catch { /* ignore */ }
+	} }, 'reset').name('↺ reset all post settings');
+	postFolders[0].open();
+
+	const settingsBtn = $('settings-btn');
+	const toggleSettings = (show = gui.domElement.classList.contains('hidden-panel')) => {
+		gui.domElement.classList.toggle('hidden-panel', !show);
+		settingsBtn.classList.toggle('on', show);
+	};
+	settingsBtn.addEventListener('click', () => toggleSettings());
+	if (params.has('settings')) toggleSettings(true);
 
 	// ------------------------------------------------------------------ input
 	const hud = $('hud');
@@ -290,7 +341,7 @@ async function main() {
 		camState.mode = m;
 		$('hud-mode').textContent = m === 'drive' ? 'PILOT' : m.toUpperCase();
 		$('hint').textContent = m === 'drive'
-			? 'W/S THROTTLE · A/D STEER · SPACE/E UP · Q/CTRL DOWN · SHIFT BOOST · V CAMERA · DRAG/WHEEL LOOK · C CINEMATIC'
+			? 'PILOT · DRAG / WHEEL TO LOOK · C FOR CINEMATIC'
 			: 'C OR W A S D — TAKE THE WHEEL';
 		document.body.classList.toggle('piloting', m === 'drive');
 		if (m === 'drive') {
@@ -317,8 +368,8 @@ async function main() {
 		}
 		else if (k === 'v') director.cycleDriveCam();
 		else if (k === 'o') setMode(camState.mode === 'free' ? 'cinematic' : 'free');
-		else if (k === 'h') { hud.classList.toggle('hidden'); gui.domElement.classList.add('hidden-panel'); }
-		else if (k === 'g') gui.domElement.classList.toggle('hidden-panel');
+		else if (k === 'h') { hud.classList.toggle('hidden'); toggleSettings(false); }
+		else if (k === 'g') toggleSettings();
 		else if (k === 'r') capture.toggle();
 		else if (k === 'p') capture.wantPhoto = true;
 		else if (k === ' ' && !pilot) { flight.boost = true; e.preventDefault(); }
@@ -428,19 +479,25 @@ async function main() {
 	};
 
 	// dynamic resolution: hold ~60 fps on whatever GPU the browser hands us
-	const dyn = { enabled: !params.has('dpr'), acc: 0, n: 0, cooldown: 2 };
+	const dyn = { acc: 0, n: 0, cooldown: 2 };
+	const scaleCtl = gui.controllersRecursive().find((c) => c.object === quality && c.property === 'scale');
 	renderer.setAnimationLoop(() => {
 		timer.update();
 		const raw = timer.getDelta();
 		frame(Math.min(raw, 1 / 20));
-		if (!dyn.enabled || capture.recording) return;
+		if (!quality.auto || capture.recording) return;
 		dyn.acc += raw; dyn.n++; dyn.cooldown -= raw;
 		if (dyn.acc > 1.5 && dyn.cooldown <= 0) {
-			const ms = (dyn.acc / dyn.n) * 1000;
-			const max = Math.min(window.devicePixelRatio, 1.5);
-			if (ms > 21 && quality.scale > 0.6) quality.scale = Math.max(0.6, quality.scale - 0.1);
-			else if (ms < 13 && quality.scale < max) quality.scale = Math.min(max, quality.scale + 0.05);
-			renderer.setPixelRatio(quality.scale);
+			const ms = (dyn.acc / dyn.n) * 1000, lo = Math.min(quality.min, quality.max);
+			let sc = quality.scale;
+			if (ms > 21) sc -= 0.1;
+			else if (ms < 13) sc += 0.05;
+			sc = +Math.min(Math.max(sc, lo), quality.max).toFixed(2);
+			if (sc !== quality.scale) {
+				quality.scale = sc;
+				renderer.setPixelRatio(sc);
+				scaleCtl?.updateDisplay();
+			}
 			dyn.acc = 0; dyn.n = 0; dyn.cooldown = 1;
 		}
 	});
