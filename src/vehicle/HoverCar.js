@@ -191,8 +191,10 @@ export class HoverCar {
 		const yaw = Math.atan2(-ap.forward.z, ap.forward.x);
 		this.root.rotation.set(0, yaw, 0);
 		const hover = Math.sin(performance.now() * 0.0021) * 0.06;
-		this.body.position.y = hover;
-		this.body.rotation.set(ap.bank, 0, ap.pitch, 'YXZ');
+		// comfort (VR cockpit): scale how much of the bank / pitch / bob reaches the cabin
+		const k = this.comfort ?? 1;
+		this.body.position.y = hover * k;
+		this.body.rotation.set(ap.bank * k, 0, ap.pitch * k, 'YXZ');
 		const thr = MathUtils.clamp(ap.speed / 60, 0.2, 1.4);
 		carUniforms.throttle.value = MathUtils.damp(carUniforms.throttle.value, thr, 4, dt);
 		carUniforms.boost.value = MathUtils.damp(carUniforms.boost.value, ap.boost, 3, dt);

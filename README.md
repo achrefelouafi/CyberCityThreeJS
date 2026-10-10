@@ -38,10 +38,38 @@ You start **at the controls** of the hover car (`?cinematic` starts on the auto-
 | `H` | hide UI, for clean captures |
 | `R` | record video (MP4/H.264 when supported, else WebM, 40 Mbps) |
 | `P` | save a PNG still |
+| `X` | VR on / off (see below) |
 
 URL parameters: `?seed=42` · `?look=Synthwave` (`Neon Noir`, `Replicant Amber`, `Synthwave`, `Akira Red`, `Ghost Shell`) · `?shot=flyby` · `?dpr=1.5` (fixed resolution, disables dynamic resolution) · `?radius=4` (view distance in chunks).
 
 > **Windows laptops:** Chrome often picks the integrated GPU for WebGPU. Set Chrome to *High performance* in *Settings → System → Display → Graphics* to run on the discrete GPU.
+
+### VR (WebXR, Meta Quest 3)
+
+Fly the Kestrel from the driver's seat. VR is a mode you switch on and off: the **◉ VR** button (top right), `X` on the keyboard, or *Settings → VR · WebXR*.
+
+**Quest on the same Wi-Fi as your PC:** run
+
+```bash
+npm run dev:xr
+```
+
+then open `https://<your-pc-ip>:5173` in the Quest Browser, accept the self-signed certificate (WebXR needs HTTPS) and press **◉ ENTER VR**. (USB alternative: `adb reverse tcp:5173 tcp:5173` with plain `npm run dev`, then open `http://localhost:5173` on the headset.) On a PC headset (Quest Link / Air Link), press **◉ VR** in desktop Chrome: the page reloads on the XR renderer, keeps your position, and **◉ ENTER VR** is one click away.
+
+| Touch controllers | |
+|---|---|
+| right trigger / left trigger | thrust / brake & reverse |
+| left stick | steer (stick forward = thrust too) |
+| right stick ↑↓ | climb / dive |
+| **both grips** | grab the holographic yoke: roll it like a wheel to steer, push / pull to dive / climb |
+| `A` (or right stick click) | boost |
+| `B` | view: **COCKPIT** → **CHASE** → **DIORAMA** (you're 28× scale; the city becomes a model at your feet) |
+| `X` | autopilot on / off (let it fly while you look around); touching the controls takes back over |
+| `Y` | recentre · hold 1.2 s to leave VR |
+
+There's a holo HUD on the windscreen, a wrist computer on the left controller with the controls, haptics on wall scrapes and boost, and a comfort vignette that tightens in hard turns. *Settings → VR · WebXR* has cabin bank, vignette strength, VR draw distance, exposure, resolution and foveation.
+
+How it works: browsers don't ship the WebXR/WebGPU binding yet, so XR mode runs Three's WebGL2 backend (same TSL materials) with multiview, so both eyes render in one pass. Headset browsers boot on it directly (`?xr=0` forces the WebGPU desktop path, `?xr=1` forces XR mode). The post stack is skipped in the headset (none of it is stereo-aware, and the frame budget goes to the city); ACES tone mapping runs directly on the materials instead. `?xremu` installs Meta's [IWER](https://github.com/meta-quest/immersive-web-emulation-runtime) Quest 3 emulator (dev only), so you can test the whole mode without a headset (drive it from the console via `window.__xrdevice`).
 
 ---
 

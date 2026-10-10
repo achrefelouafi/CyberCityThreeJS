@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -22,8 +23,10 @@ const captures = {
 	},
 };
 
-export default defineConfig({
-	plugins: [captures],
+// `npm run dev:xr`: HTTPS on the LAN (self-signed) so a Quest on the same Wi-Fi can open
+// https://<this-pc>:5173 — WebXR only runs in a secure context.
+export default defineConfig(({ mode }) => ({
+	plugins: [captures, ...(mode === 'xr' ? [basicSsl()] : [])],
 	build: { target: 'esnext', chunkSizeWarningLimit: 2000 },
-	server: { port: 5173 },
-});
+	server: { port: 5173, host: mode === 'xr' ? true : undefined },
+}));

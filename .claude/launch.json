@@ -18,6 +18,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--", "--port", "5175", "--strictPort"],
       "port": 5175
+    },
+    {
+      "name": "perf-scratch",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/vite/bin/vite.js", "C:/Users/chiro/AppData/Local/Temp/claude/C--Users-chiro-Documents-GitHub-CyberCityThreeJS/abd3d536-b27d-41ff-bf32-a5844006c811/scratchpad/wt", "--port", "5176", "--strictPort"],
+      "port": 5176
     }
   ]
 }

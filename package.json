@@ -9,7 +9,8 @@
     "assets": "node scripts/pipeline.mjs",
     "parity": "node scripts/parity.mjs",
     "media": "node scripts/fetch-media.mjs",
-    "car": "node scripts/pipeline.mjs --car"
+    "car": "node scripts/pipeline.mjs --car",
+    "dev:xr": "vite --mode xr"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +25,8 @@
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@vitejs/plugin-basic-ssl": "2.3.0",
+    "iwer": "2.4.0",
     "vite": "^8.3.4"
   }
 }

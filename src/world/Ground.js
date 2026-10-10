@@ -81,6 +81,8 @@ export function createGround() {
 	const mesh = new Mesh(new PlaneGeometry(9000, 9000, 1, 1).rotateX(-Math.PI / 2), mat);
 	mesh.name = 'ground';
 	mesh.frustumCulled = false;
-	mesh.renderOrder = -1;
+	// after the city: the towers fill the depth buffer first, so the (noise-heavy) street
+	// shader only runs on the asphalt you can actually see
+	mesh.renderOrder = 1;
 	return mesh;
 }

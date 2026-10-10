@@ -8,7 +8,7 @@
 // made relative to the floating render origin at pack time, so precision holds
 // thousands of kilometres from the start.
 
-import { InstancedMesh, InstancedBufferAttribute, DynamicDrawUsage, Vector3, Frustum, Matrix4, Box3 } from 'three/webgpu';
+import { InstancedMesh, InstancedBufferAttribute, Vector3, Frustum, Matrix4, Box3 } from 'three/webgpu';
 import { PIECES } from './layout.js';
 import { dressBlock } from './Dressing.js';
 
@@ -216,8 +216,16 @@ export class CityStreamer {
 			}
 			p.mesh.count = n;
 			p.mesh.visible = n > 0;
-			p.mesh.instanceMatrix.needsUpdate = true;
-			p.inst.needsUpdate = true;
+			if (n) {
+				// upload just the packed range (capacity is padded for growth)
+				const im = p.mesh.instanceMatrix;
+				im.clearUpdateRanges();
+				im.addUpdateRange(0, n * 16);
+				im.needsUpdate = true;
+				p.inst.clearUpdateRanges();
+				p.inst.addUpdateRange(0, n * 4);
+				p.inst.needsUpdate = true;
+			}
 			total += n;
 			if (n) draws++;
 		});
@@ -241,16 +249,20 @@ export class CityStreamer {
 
 	_ensure(p, n) {
 		if (p.mesh && n <= p.capacity) return;
-		const capacity = Math.ceil(Math.max(n, 16) * 1.35);
+		// >= 1100 instances: above the uniform-buffer limit (64 KB WebGPU / 16 KB WebGL), so three
+		// feeds instance matrices as vertex attributes. Smaller meshes get a per-mesh UBO baked
+		// into the shader, i.e. one unique ~100 KB shader *per kit piece* and per resize — that is
+		// minutes of compiling on the WebGL/XR backend and a hitch every time a mesh grows.
+		const capacity = Math.ceil(Math.max(n * 1.35, 1100));
 		if (p.mesh) {
 			this.scene.remove(p.mesh);
 			p.mesh.dispose();
 		}
+		// static usage on purpose: three's WebGPURenderer re-uploads every DynamicDrawUsage
+		// attribute on *every* frame (~6 MB/frame for the city); static ones only on needsUpdate
 		p.inst = new InstancedBufferAttribute(new Float32Array(capacity * 4), 4);
-		p.inst.setUsage(DynamicDrawUsage);
 		p.geometry.setAttribute('aInst', p.inst);
 		const mesh = new InstancedMesh(p.geometry, p.holo ? this.holoMaterial : this.material, capacity);
-		mesh.instanceMatrix.setUsage(DynamicDrawUsage);
 		mesh.frustumCulled = false;
 		mesh.name = `city:${p.name}`;
 		if (p.holo) mesh.renderOrder = 10;

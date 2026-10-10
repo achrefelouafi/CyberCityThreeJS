@@ -150,6 +150,28 @@ html, body {
 .settings-btn b { color: var(--neon-a); margin-left: 6px; }
 .settings-btn:hover, .settings-btn.on { background: rgba(255, 47, 160, 0.25); border-color: var(--neon-a); }
 .lil-gui.hidden-panel { display: none; }
+.btn-row { display: flex; gap: 8px; justify-content: flex-end; }
+.vr-btn { border-color: rgba(24, 214, 255, 0.55); }
+.vr-btn b { color: var(--neon-b); }
+.vr-btn:hover { background: rgba(24, 214, 255, 0.22); border-color: var(--neon-b); }
+.vr-btn.na { opacity: 0.45; }
+.vr-btn.ready { border-color: var(--neon-b); animation: vr-pulse 1.6s ease-in-out infinite; }
+@keyframes vr-pulse {
+	0%, 100% { box-shadow: 0 0 0 rgba(24, 214, 255, 0); }
+	50% { box-shadow: 0 0 22px rgba(24, 214, 255, 0.75); background: rgba(24, 214, 255, 0.2); }
+}
+.vr-overlay {
+	position: fixed; inset: 0; display: none; place-content: center; text-align: center; gap: 14px;
+	background: radial-gradient(ellipse at center, rgba(24, 214, 255, 0.12), rgba(5, 3, 10, 0.92) 70%);
+	pointer-events: none; letter-spacing: 0.3em;
+}
+.vr-overlay-title { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 42px; color: var(--neon-b); text-shadow: 0 0 24px var(--neon-b); }
+.vr-overlay-sub { font-size: 13px; color: var(--dim); padding: 0 16px; }
+body.in-vr .vr-overlay { display: grid; }
+body.xr-emu .vr-overlay { display: none; }
+body.in-vr .hud-bottom { opacity: 0; }
+body.in-vr .hud { z-index: 3; }
+.vr-overlay { z-index: 2; }
 
 @media (max-width: 1100px) {
 	.keys { grid-template-columns: repeat(2, auto); }

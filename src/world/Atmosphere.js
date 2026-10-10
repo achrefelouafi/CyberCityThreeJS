@@ -1,10 +1,14 @@
-// Night sky (background node), analytic height fog and a procedural environment
+// Night sky (depth-tested dome), analytic height fog and a procedural environment
 // map so glass, wet streets and the car paint reflect a neon-polluted sky.
 
-import { Color, Mesh, SphereGeometry, BackSide, MeshBasicNodeMaterial, PlaneGeometry, Scene, PMREMGenerator, Vector3 } from 'three/webgpu';
 import {
-	Fn, uniform, vec2, vec3, float, mix, smoothstep, exp, max, abs, select, length, normalize, positionWorld, cameraPosition,
-	positionWorldDirection, fog, time, mx_fractal_noise_float, pow, clamp, hash, floor, fract, dot,
+	Color, Mesh, SphereGeometry, BackSide, MeshBasicNodeMaterial, NodeMaterial, PlaneGeometry, Scene, PMREMGenerator, Vector3,
+	RenderTarget, QuadMesh, HalfFloatType, LinearFilter, RepeatWrapping, ClampToEdgeWrapping,
+} from 'three/webgpu';
+import {
+	Fn, uniform, vec2, vec3, vec4, float, mix, smoothstep, exp, max, abs, select, length, normalize, positionWorld, cameraPosition,
+	positionWorldDirection, positionLocal, modelViewMatrix, cameraProjectionMatrix, fog, time, mx_fractal_noise_float, pow, clamp,
+	hash, floor, fract, dot, uv, texture, sin, cos, atan, asin, sqrt,
 } from 'three/tsl';
 
 export const atmo = {
@@ -38,8 +42,49 @@ export const skyColor = Fn(([dir]) => {
 	return mix(base.add(glowBand), cloudCol, cl).add(vec3(st));
 });
 
-export function setupAtmosphere(scene) {
-	scene.backgroundNode = skyColor(positionWorldDirection);
+// Fog colour comes from a small equirect bake of the sky (upper hemisphere,
+// refreshed every few frames): the fractal-noise clouds used to be evaluated
+// per fragment for every fogged surface in the city.
+const LUT_W = 1024, LUT_H = 128, LUT_EVERY = 3;
+const HALF_PI = Math.PI / 2;
+
+export function setupAtmosphere(scene, renderer) {
+	// sky dome: drawn after the opaque city at the far plane with depth testing, so
+	// the noise sky is only shaded where it is actually visible (three's scene
+	// background draws first, full screen, and the city then overdraws it)
+	const skyMat = new NodeMaterial();
+	skyMat.name = 'Sky';
+	skyMat.side = BackSide;
+	skyMat.depthWrite = false;
+	skyMat.fog = false;
+	skyMat.lights = false;
+	const clip = cameraProjectionMatrix.mul(vec4(modelViewMatrix.mul(vec4(positionLocal, 0.0)).xyz, 1.0));
+	skyMat.vertexNode = renderer.reversedDepthBuffer ? clip.setZ(0) : clip.setZ(clip.w);
+	skyMat.colorNode = skyColor(positionWorldDirection);
+	const dome = new Mesh(new SphereGeometry(1, 32, 32), skyMat);
+	dome.name = 'sky';
+	dome.frustumCulled = false;
+	dome.renderOrder = 1e6; // last of the opaques, before anything transparent
+	scene.add(dome);
+
+	// sky LUT: u = azimuth, v = sqrt(elevation / 90 deg) (most rows near the horizon, where the haze is)
+	const lut = new RenderTarget(LUT_W, LUT_H, { type: HalfFloatType, depthBuffer: false, generateMipmaps: false });
+	Object.assign(lut.texture, { minFilter: LinearFilter, magFilter: LinearFilter, wrapS: RepeatWrapping, wrapT: ClampToEdgeWrapping });
+	const lutMat = new NodeMaterial();
+	lutMat.name = 'SkyLUT';
+	lutMat.fog = false;
+	lutMat.lights = false;
+	const az = uv().x.mul(Math.PI * 2).sub(Math.PI), el = uv().y.mul(uv().y).mul(HALF_PI);
+	lutMat.colorNode = skyColor(vec3(cos(el).mul(cos(az)), sin(el), cos(el).mul(sin(az))));
+	const quad = new QuadMesh(lutMat);
+	let n = 0;
+	const update = (force = false) => {
+		if (!force && n++ % LUT_EVERY) return;
+		const prev = renderer.getRenderTarget();
+		renderer.setRenderTarget(lut);
+		quad.render(renderer);
+		renderer.setRenderTarget(prev);
+	};
 
 	const fogFactor = Fn(() => {
 		const d = positionWorld.sub(cameraPosition);
@@ -54,10 +99,13 @@ export function setupAtmosphere(scene) {
 	});
 	const fogCol = Fn(() => {
 		const dir = normalize(positionWorld.sub(cameraPosition));
-		const sky = skyColor(vec3(dir.x, max(dir.y, 0.015), dir.z));
+		const u = atan(dir.z, dir.x).add(Math.PI).div(Math.PI * 2);
+		const v = sqrt(asin(clamp(max(dir.y, 0.015), 0.0, 1.0)).div(HALF_PI));
+		const sky = texture(lut.texture, vec2(u, v)).level(0).rgb;
 		return mix(atmo.fogColor, sky, 0.4);
 	});
 	scene.fogNode = fog(fogCol(), fogFactor());
+	return { update, dome, lut };
 }
 
 /** A one-off neon environment: sky dome + glowing panels, prefiltered with PMREM. */

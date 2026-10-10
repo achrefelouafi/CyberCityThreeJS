@@ -34,12 +34,15 @@ import { createPosterAtlas } from './media/PosterAtlas.js';
 import { HoloLayer, holoLayerUniforms } from './world/HoloLayer.js';
 import { Wires, wireUniforms } from './world/Wires.js';
 import { HoloArt, holoArtUniforms } from './world/HoloArt.js';
+import { installLightCulling } from './materials/lightCulling.js';
+import { XRDrive, XR_VIEWS, wantsXRBackend, xrSupport, isHeadsetBrowser } from './xr/XRDrive.js';
 
 const $ = (id) => document.getElementById(id);
 const progress = (p, msg) => { $('loader-fill').style.width = `${Math.round(p * 100)}%`; if (msg) $('loader-msg').textContent = msg; };
 const params = new URLSearchParams(location.search);
 
 async function main() {
+	installLightCulling();
 	progress(0.05, 'READING BLENDER MANIFEST');
 	const manifest = await (await fetch('/assets/manifest.json')).json();
 	// float32 values from Blender (0.30000001...) -> tidy decimals; F() in layout.js rounds back identically
@@ -48,9 +51,21 @@ async function main() {
 
 	// ------------------------------------------------------------------ renderer
 	const canvas = $('view');
+	// XR mode: WebXR presents through the WebGL backend (browsers don't ship the WebXR/WebGPU
+	// binding yet), so headset browsers boot on it directly and desktops reboot into it
+	// (?xr) when VR is requested. ?xremu adds an emulated Quest 3 for headset-less testing.
+	const xrBackend = wantsXRBackend(params);
+	if (params.has('xremu')) document.body.classList.add('xr-emu');
+	if (params.has('xremu')) await (await import('./xr/emulator.js')).installXREmulator({ headless: params.get('xremu') === 'headless' });
 	// reversed-Z + float32 depth: near-uniform depth precision from 0.25 m to 4 km, which is
-// what kills the Z-fighting on distant facades, signs and trims
-	const renderer = new WebGPURenderer({ canvas, antialias: false, powerPreference: 'high-performance', reversedDepthBuffer: true });
+	// what kills the Z-fighting on distant facades, signs and trims. (Off in XR mode: the XR
+	// projection matrices come from the headset and the XR depth buffer is 24-bit anyway.)
+	const renderer = new WebGPURenderer({
+		canvas, antialias: false, powerPreference: 'high-performance',
+		reversedDepthBuffer: !xrBackend, forceWebGL: xrBackend,
+		// multiview (one pass for both eyes) on the headset; the emulator's layers polyfill can't do it
+		multiview: xrBackend && params.get('xrmv') !== '0' && !params.has('xremu'),
+	});
 	await renderer.init();
 	// render scale = CSS px -> render px. Auto mode adapts it between min and max to hold
 	// ~60 fps; max > 1 supersamples on fast GPUs (the cleanest anti-aliasing there is).
@@ -98,7 +113,8 @@ async function main() {
 	const layout = new CityLayout(paramsFromValues(values), manifest.channels);
 	groundUniforms.pitch.value = layout.pitch;
 
-	setupAtmosphere(scene);
+	const sky = setupAtmosphere(scene, renderer);
+	sky.update(true);
 	progress(0.5, 'PREFILTERING ENVIRONMENT');
 	scene.environment = buildEnvironment(renderer);
 	scene.environmentIntensity = 0.32;
@@ -121,7 +137,11 @@ async function main() {
 	progress(0.6, 'GENERATING CITY FROM GN LAYOUT');
 	const city = new CityStreamer({ scene, layout, kit, material, holoMaterial: holo, chunkBlocks: 4, radius: +(params.get('radius') ?? 3), detailRadius: 1 });
 	const ap = new Autopilot(layout, values.Seed * 31 + 7);
-	ap.reset(0, 0, 0);
+	// switching into XR mode reloads the page: pick up where the car was
+	const SPOT_KEY = 'neokyoto.spot';
+	let spot = null;
+	try { spot = JSON.parse(sessionStorage.getItem(SPOT_KEY) ?? 'null'); sessionStorage.removeItem(SPOT_KEY); } catch { /* storage blocked */ }
+	ap.reset(spot?.i ?? 0, spot?.j ?? 0, spot?.dir ?? 0);
 	const renderPos = new Vector3().copy(ap.pos);
 	camera.position.copy(renderPos).add(new Vector3(-12, 4, 0));
 	city.fill(camera);
@@ -159,6 +179,69 @@ async function main() {
 	// you fly by default; ?cinematic starts on the auto-directed film, ?kiosk returns to it when idle
 	const kiosk = params.has('kiosk');
 	const fade = { t: 1 };
+
+	// ------------------------------------------------------------------ WebXR
+	const xr = new XRDrive({ renderer, scene, car, toast: (t) => director.onShot(t) });
+	const _abs = new Vector3();
+	xr.solidTest = (p) => insideSolids(layout, _abs.copy(p).add(city.origin), 1.5); // render space -> absolute
+	const vrBtn = $('vr-btn');
+	const vrUi = { toggle: () => toggleVR(), xrBackend: !!renderer.backend.isWebGLBackend && xrBackend, view: XR_VIEWS[0] };
+	let normalRadius = city.radius;
+	const setVrButton = async () => {
+		if (xr.presenting) { vrBtn.innerHTML = '◉ EXIT VR <b>X</b>'; vrBtn.classList.remove('ready'); return; }
+		const sup = await xrSupport();
+		vrBtn.classList.toggle('na', !sup.ok);
+		vrBtn.title = sup.ok ? 'Fly the Kestrel in your headset (X)' : sup.why;
+		vrBtn.innerHTML = sup.ok && xrBackend ? '◉ ENTER VR <b>X</b>' : '◉ VR <b>X</b>';
+		vrBtn.classList.toggle('ready', sup.ok && xrBackend);
+	};
+	const saveSpot = () => {
+		const s = pilot ? player : ap, P = layout.pitch, f = s.forward;
+		const dir = Math.abs(f.x) > Math.abs(f.z) ? (f.x > 0 ? 0 : 2) : (f.z < 0 ? 1 : 3);
+		try { sessionStorage.setItem(SPOT_KEY, JSON.stringify({ i: Math.round(s.pos.x / P), j: Math.round(-s.pos.z / P), dir })); } catch { /* ignore */ }
+	};
+	const reloadWith = (xrOn) => {
+		saveSpot();
+		const u = new URL(location.href);
+		u.searchParams.set('xr', xrOn ? '1' : '0');
+		location.href = u.toString();
+	};
+	async function toggleVR() {
+		if (xr.presenting) { xr.exit(); return; }
+		const sup = await xrSupport();
+		if (!sup.ok) { director.onShot(sup.why); return; }
+		if (!renderer.backend.isWebGLBackend) {
+			// this canvas runs on WebGPU, which can't present to WebXR yet: reboot on the XR renderer
+			director.onShot('SWITCHING TO THE XR RENDERER…');
+			setTimeout(() => reloadWith(true), 400);
+			return;
+		}
+		try { await xr.enter(); } catch (e) { console.error(e); director.onShot('VR FAILED: ' + String(e.message ?? e).toUpperCase()); }
+	}
+	xr.onAutopilot = (on) => {
+		if (on && pilot) { exitPilot('chase'); xr.say('AUTOPILOT ENGAGED · LOOK AROUND', 3); }
+		else if (!on && !pilot) { enterPilot(); xr.say('YOU HAVE CONTROL'); }
+	};
+	xr.onSessionChange = (on) => {
+		document.body.classList.toggle('in-vr', on);
+		if (on) {
+			if (!pilot) enterPilot();
+			normalRadius = city.radius;
+			city.radius = Math.min(city.radius, xr.opts.drawDistance);
+			city.fill(camera);
+		} else {
+			city.radius = normalRadius;
+			city.fill(camera);
+			camera.aspect = W() / H();
+			camera.fov = 62;
+			camera.updateProjectionMatrix();
+			director.cut = true;
+		}
+		setVrButton();
+	};
+	vrBtn.addEventListener('click', () => toggleVR());
+	setVrButton();
+	navigator.xr?.addEventListener?.('devicechange', setVrButton);
 
 	const controls = new OrbitControls(camera, canvas);
 	controls.enabled = false;
@@ -286,6 +369,17 @@ async function main() {
 				{ ...U(post.u.splitAmount), min: 0, max: 1, step: 0.01, name: 'split tone' },
 				{ ...U(post.u.vignette), min: 0, max: 1, step: 0.01, name: 'vignette' },
 			],
+			'VR · WebXR': [
+				{ obj: vrUi, key: 'toggle', name: '◉ enter / exit VR (X)' },
+				{ obj: vrUi, key: 'xrBackend', name: 'XR mode (WebGL backend · reloads)', onChange: (v) => reloadWith(v) },
+				{ obj: vrUi, key: 'view', options: XR_VIEWS, name: 'headset view', onChange: (v) => { xr.view = (XR_VIEWS.indexOf(v) + XR_VIEWS.length - 1) % XR_VIEWS.length; xr.cycleView(); } },
+				{ obj: xr.opts, key: 'comfortBank', min: 0, max: 1, step: 0.01, name: 'cabin bank (comfort)' },
+				{ obj: xr.opts, key: 'vignette', min: 0, max: 1, step: 0.01, name: 'comfort vignette' },
+				{ obj: xr.opts, key: 'drawDistance', min: 1, max: 5, step: 1, name: 'VR draw distance', onChange: (v) => { if (xr.presenting) { city.radius = v; city.fill(camera); } } },
+				{ obj: xr.opts, key: 'exposure', min: 0.5, max: 2.5, step: 0.01, name: 'VR exposure', onChange: (v) => { if (xr.presenting) renderer.toneMappingExposure = xr._prevExposure * v; } },
+				{ obj: xr.opts, key: 'framebufferScale', min: 0.5, max: 1.5, step: 0.05, name: 'VR resolution (next session)' },
+				{ obj: xr.opts, key: 'foveation', min: 0, max: 1, step: 0.01, name: 'foveation', onChange: (v) => renderer.xr.setFoveation(v) },
+			],
 			'City · Streaming': [
 				{ obj: city, key: 'radius', min: 1, max: 6, step: 1, name: 'draw distance (chunks)', onChange: () => city.fill(camera) },
 				{ obj: city, key: 'midRadius', min: 0, max: 4, step: 1, name: 'mid-detail ring', onChange: () => (city.dirty = true) },
@@ -384,6 +478,7 @@ async function main() {
 		else if (k === 'p') capture.wantPhoto = true;
 		else if (k === ' ' && !pilot) { flight.boost = true; e.preventDefault(); }
 		else if (k === 'n') director._next();
+		else if (k === 'x') toggleVR();
 		else if (k === 't') playTitle();
 		else if (k === 'l') cinema.letterbox = !cinema.letterbox;
 		else if (k >= '1' && k <= '8') { director.mode = 'cinematic'; director._start(SHOTS[+k]); }
@@ -403,6 +498,11 @@ async function main() {
 	progress(0.8, 'COMPILING WEBGPU PIPELINES');
 	director.update(0.016, car, ap, city.origin);
 	await renderer.compileAsync(scene, camera);
+	if (vrUi.xrBackend) {
+		// headset-ready boot: build the stereo shaders now, so ENTER VR doesn't sit in the dark compiling
+		progress(0.9, 'COMPILING VR PIPELINES');
+		await xr.prewarm(camera);
+	}
 	progress(1, 'ONLINE');
 	setTimeout(() => $('loader').classList.add('done'), 300);
 	if (!params.has('notitle')) setTimeout(playTitle, 700);
@@ -413,14 +513,18 @@ async function main() {
 	const timer = new Timer();
 	timer.connect(document);
 	const prevCar = new Vector3().copy(car.root.position);
-	let fpsAcc = 0, fpsN = 0;
+	let fpsAcc = 0, fpsN = 0, hudSector = '', hudFps = 0;
 	const frame = (dt) => {
 		// who flies the car: autopilot, or the player as soon as they touch the controls
-		if (!pilot && input.active && camState.mode !== 'locked') enterPilot();
-		let fs;
+		const vr = xr.presenting;
+		const xin = vr ? xr.read(dt) : null;
+		if (!pilot && (input.active || xin?.active) && camState.mode !== 'locked') enterPilot();
+		let fs, ctl = null;
 		if (pilot) {
-			fs = player.update(dt, input.read());
-			pilotIdle = input.active || Math.abs(player.speed) > 3 && input.read().throttle ? 0 : pilotIdle + dt;
+			const kb = input.read();
+			ctl = xin ? { throttle: xin.throttle || kb.throttle, steer: xin.steer || kb.steer, lift: xin.lift || kb.lift, boost: xin.boost || kb.boost } : kb;
+			fs = player.update(dt, ctl);
+			pilotIdle = input.active || xin?.active || Math.abs(player.speed) > 3 && ctl.throttle ? 0 : pilotIdle + dt;
 			if (kiosk && pilotIdle > 30) exitPilot('cinematic'); // kiosk: hand back to the director
 		} else {
 			ap.boost = flight.boost ? Math.min(ap.boost + dt * 2, 1) : Math.max(ap.boost - dt, 0);
@@ -429,8 +533,13 @@ async function main() {
 		fade.t = Math.min(1, fade.t + dt * 2.5);
 		post.u.fade.value = fade.t * fade.t * (3 - 2 * fade.t);
 		renderPos.copy(fs.pos).sub(city.origin);
+		xr.autopilot = !pilot;
+		car.comfort = vr && xr.view === 0 ? xr.opts.comfortBank : 1;
 		car.update(dt, fs, renderPos, camera);
-		if (camState.mode === 'locked') {
+		if (vr) {
+			// headset: your tracking space rides the car; the shared camera follows your head
+			xr.update(dt, fs, camera, { fade: 1 - post.u.fade.value, steer: ctl ? ctl.steer : MathUtils.clamp(fs.bank * 1.2, -1, 1), sector: hudSector, fps: hudFps });
+		} else if (camState.mode === 'locked') {
 			// dev/look-dev: camera is left exactly where it was put
 		} else if (camState.mode === 'free') {
 			const d = car.root.position.clone().sub(prevCar);
@@ -438,9 +547,9 @@ async function main() {
 			controls.target.copy(car.root.position);
 			controls.update();
 		} else director.update(dt, car, fs, city.origin);
-		const inside = camState.mode === 'drive' && director.inCockpit;
+		const inside = vr ? xr.inCockpit : camState.mode === 'drive' && director.inCockpit;
 		carUniforms.inside.value = MathUtils.damp(carUniforms.inside.value, inside ? 1 : 0, 10, dt);
-		document.body.classList.toggle('cockpit', inside);
+		document.body.classList.toggle('cockpit', inside && !vr);
 		car.updateScreens(dt, {
 			speed: fs.speed, alt: fs.alt, boost: fs.boost ?? 0, throttle: carUniforms.throttle.value / 1.4,
 			heading: Math.atan2(-fs.forward.z, fs.forward.x), x: fs.pos.x, z: fs.pos.z,
@@ -464,6 +573,7 @@ async function main() {
 			archUniforms.origin.value.copy(city.origin);
 			camera.position.sub(delta);
 			director.rebase(delta);
+			xr.rebase(delta);
 			car.rebase(delta);
 			rebaseViewProj(delta);
 			renderPos.sub(delta);
@@ -479,17 +589,23 @@ async function main() {
 		wires.update(camera, city.origin, layout.pitch, values['Street Width'], !!delta);
 		holoArt.update(dt, camera, city.origin, layout.pitch, values['Street Width']);
 
-		post.render(dt);
-		storeViewProj(camera);
-		capture.afterRender();
-		capture.tick();
+		sky.update();
+		if (vr) xr.render();
+		else {
+			post.render(dt);
+			storeViewProj(camera);
+			capture.afterRender();
+			capture.tick();
+		}
 
 		// HUD
 		fpsAcc += dt; fpsN++;
 		if (fpsAcc > 0.5) {
 			const { bx, by } = city.blockAt(car.root.position);
-			$('hud-sector').textContent = `${bx >= 0 ? '+' : ''}${bx}.${by >= 0 ? '+' : ''}${by}`;
-			$('hud-stats').textContent = `${Math.round(fpsN / fpsAcc)} FPS\n${city.stats.instances.toLocaleString()} GN INSTANCES · ${city.stats.drawCalls} DRAWS\nSEED ${values.Seed}`;
+			hudSector = `${bx >= 0 ? '+' : ''}${bx}.${by >= 0 ? '+' : ''}${by}`;
+			hudFps = Math.round(fpsN / fpsAcc);
+			$('hud-sector').textContent = hudSector;
+			$('hud-stats').textContent = `${hudFps} FPS${xr.presenting ? ' · VR' : ''}\n${city.stats.instances.toLocaleString()} GN INSTANCES · ${city.stats.drawCalls} DRAWS\nSEED ${values.Seed}`;
 			fpsAcc = 0; fpsN = 0;
 		}
 		$('hud-speed').textContent = String(Math.round(Math.abs(fs.speed) * 3.6)).padStart(3, '0');
@@ -503,7 +619,7 @@ async function main() {
 		timer.update();
 		const raw = timer.getDelta();
 		frame(Math.min(raw, 1 / 20));
-		if (!quality.auto || capture.recording) return;
+		if (!quality.auto || capture.recording || xr.presenting) return;
 		dyn.acc += raw; dyn.n++; dyn.cooldown -= raw;
 		if (dyn.acc > 1.5 && dyn.cooldown <= 0) {
 			const ms = (dyn.acc / dyn.n) * 1000, lo = Math.min(quality.min, quality.max);
@@ -569,7 +685,8 @@ async function main() {
 			await shot(`${prefix}_${sh}`, 1);
 		}
 	};
-	window.__app = { holoArt, renderer, scene, camera, city, layout, controls, ap, car, director, post, values, gui, applyLook, step, shot, frame, setMode, contact, videos, holoLayer, player, input, enterPilot, exitPilot };
+	if (xrBackend && !params.has('xremu') && isHeadsetBrowser()) $('hint').textContent = 'PRESS ◉ ENTER VR — TAKE THE WHEEL IN YOUR HEADSET';
+	window.__app = { sky, xr, holoArt, renderer, scene, camera, city, layout, controls, ap, car, director, post, values, gui, applyLook, step, shot, frame, setMode, contact, videos, holoLayer, player, input, enterPilot, exitPilot };
 }
 
 main().catch((e) => {

@@ -17,7 +17,10 @@
 		<div class="hud-tr">
 			<div class="badge">BLENDER GEOMETRY NODES <span class="arrow">→</span> THREE.JS WEBGPU</div>
 			<div class="stats" id="hud-stats"></div>
-			<button id="settings-btn" class="settings-btn" type="button" title="Post-processing, quality and city generator (G)">⚙ SETTINGS <b>G</b></button>
+			<div class="btn-row">
+				<button id="vr-btn" class="settings-btn vr-btn" type="button" title="Fly the Kestrel in a WebXR headset (X)">◉ VR <b>X</b></button>
+				<button id="settings-btn" class="settings-btn" type="button" title="Post-processing, quality and city generator (G)">⚙ SETTINGS <b>G</b></button>
+			</div>
 		</div>
 		<div class="hud-bottom">
 			<div class="hud-bl">
@@ -31,11 +34,16 @@
 			</div>
 			<div class="hud-br">
 				<div class="keys">
-					<span><b>WASD</b> fly</span><span><b>SPACE/Q</b> up/down</span><span><b>SHIFT</b> boost</span><span><b>V</b> view</span><span><b>F</b> cockpit</span><span><b>C</b> fly ⇄ cinematic</span><span><b>O</b> orbit</span><span><b>T</b> title</span><span><b>L</b> letterbox</span><span><b>G</b> settings</span><span><b>H</b> hide UI</span><span><b>R</b> record</span><span><b>P</b> photo</span>
+					<span><b>WASD</b> fly</span><span><b>SPACE/Q</b> up/down</span><span><b>SHIFT</b> boost</span><span><b>V</b> view</span><span><b>F</b> cockpit</span><span><b>C</b> fly ⇄ cinematic</span><span><b>O</b> orbit</span><span><b>T</b> title</span><span><b>L</b> letterbox</span><span><b>X</b> VR</span><span><b>G</b> settings</span><span><b>H</b> hide UI</span><span><b>R</b> record</span><span><b>P</b> photo</span>
 				</div>
 			</div>
 		</div>
 		<div id="rec" class="rec hidden">● REC <span id="rec-time">00:00</span></div>
+	</div>
+
+	<div id="vr-overlay" class="vr-overlay">
+		<div class="vr-overlay-title">◉ IN VR</div>
+		<div class="vr-overlay-sub">THE KESTREL IS FLYING IN YOUR HEADSET · HOLD Y OR PRESS X HERE TO COME BACK</div>
 	</div>
 
 	<div id="loader" class="loader">
