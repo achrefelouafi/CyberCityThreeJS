@@ -23,7 +23,7 @@ import { createSearchlights, setSearchlights, searchUniforms } from './world/Sea
 import { HoverCar, carUniforms } from './vehicle/HoverCar.js';
 import { Autopilot } from './vehicle/Autopilot.js';
 import { PlayerFlight, FlightInput, insideSolids } from './vehicle/PlayerFlight.js';
-import { Director, SHOTS } from './camera/Director.js';
+import { Director, SHOTS, DRIVE_CAMS } from './camera/Director.js';
 import { Post } from './post/Post.js';
 import { buildGui } from './ui/Gui.js';
 import { Capture } from './ui/Capture.js';
@@ -199,7 +199,7 @@ async function main() {
 		gui?.controllersRecursive().forEach((c) => c.updateDisplay());
 	};
 	const U = (u, key = 'value') => ({ obj: u, key });
-	const camState = { mode: 'cinematic', shot: 'chase', cut: () => director._next() };
+	const camState = { mode: 'cinematic', shot: 'chase', driveCam: DRIVE_CAMS[0], cut: () => director._next() };
 	const flight = { speed: ap.cruise, boost: false };
 	const rebuildPost = () => post.build();
 	const refreshGui = () => gui?.controllersRecursive().forEach((c) => c.updateDisplay());
@@ -214,12 +214,14 @@ async function main() {
 				{ obj: camState, key: 'mode', options: ['drive', 'cinematic', 'chase', 'free'], onChange: (m) => (m === 'drive' ? (pilot || enterPilot()) : setMode(m)) },
 				{ obj: camState, key: 'shot', options: SHOTS.slice(1), onChange: (s) => { director.mode = 'cinematic'; director._start(s); } },
 				{ obj: camState, key: 'cut', name: 'next shot' },
+				{ obj: camState, key: 'driveCam', name: 'pilot camera', options: DRIVE_CAMS, onChange: (c) => { if (!pilot) enterPilot(); director.setDriveCam(DRIVE_CAMS.indexOf(c)); } },
 				{ obj: director, key: 'shake', min: 0, max: 3, step: 0.01 },
 			],
 			'Flight': [
 				{ obj: ap, key: 'cruise', min: 15, max: 110, step: 1, name: 'cruise m/s' },
 				{ obj: ap, key: 'turnSpeed', min: 10, max: 40, step: 1, name: 'turn m/s' },
 				{ ...U(carUniforms.neonI), min: 0, max: 30, step: 0.1, name: 'car neon' },
+				{ obj: carUniforms.paint, key: 'value', color: true, name: 'car paint' },
 			],
 			'Materials (CC_*)': [
 				{ ...U(archUniforms.winW), min: 1.2, max: 5, step: 0.01, name: 'Window Width' },
@@ -343,7 +345,7 @@ async function main() {
 		camState.mode = m;
 		$('hud-mode').textContent = m === 'drive' ? 'PILOT' : m.toUpperCase();
 		$('hint').textContent = m === 'drive'
-			? 'PILOT · DRAG / WHEEL TO LOOK · C FOR CINEMATIC'
+			? 'PILOT · F COCKPIT · V CAMERA · DRAG TO LOOK · C CINEMATIC'
 			: 'C OR W A S D — TAKE THE WHEEL';
 		document.body.classList.toggle('piloting', m === 'drive');
 		if (m === 'drive') {
@@ -368,7 +370,13 @@ async function main() {
 			if (camState.mode === 'drive') exitPilot('cinematic');
 			else enterPilot();
 		}
-		else if (k === 'v') director.cycleDriveCam();
+		else if (k === 'v') { director.cycleDriveCam(); camState.driveCam = DRIVE_CAMS[director.driveCam]; }
+		else if (k === 'f') {
+			// first person: jump into the cockpit (and take the wheel), or back out to the chase cam
+			if (!pilot) enterPilot();
+			director.setDriveCam(director.driveCam === 2 ? 0 : 2);
+			camState.driveCam = DRIVE_CAMS[director.driveCam];
+		}
 		else if (k === 'o') setMode(camState.mode === 'free' ? 'cinematic' : 'free');
 		else if (k === 'h') { hud.classList.toggle('hidden'); toggleSettings(false); }
 		else if (k === 'g') toggleSettings();
@@ -430,6 +438,14 @@ async function main() {
 			controls.target.copy(car.root.position);
 			controls.update();
 		} else director.update(dt, car, fs, city.origin);
+		const inside = camState.mode === 'drive' && director.inCockpit;
+		carUniforms.inside.value = MathUtils.damp(carUniforms.inside.value, inside ? 1 : 0, 10, dt);
+		document.body.classList.toggle('cockpit', inside);
+		car.updateScreens(dt, {
+			speed: fs.speed, alt: fs.alt, boost: fs.boost ?? 0, throttle: carUniforms.throttle.value / 1.4,
+			heading: Math.atan2(-fs.forward.z, fs.forward.x), x: fs.pos.x, z: fs.pos.z,
+			pitch: layout.pitch, street: values['Street Width'], mode: camState.mode,
+		});
 		prevCar.copy(car.root.position);
 
 		// cinematic layer: rack focus onto the car on close shots, letterbox in cinematic mode

@@ -27,7 +27,8 @@ You start **at the controls** of the hover car (`?cinematic` starts on the auto-
 | `A` `D` / `←` `→` | steer (banks into the turn) |
 | `SPACE` / `E`, `Q` / `CTRL` | climb, descend |
 | `SHIFT` | boost |
-| `V` | pilot camera: chase → wide → hood |
+| `V` | pilot camera: chase → wide → cockpit → hood |
+| `F` | first-person cockpit ⇄ chase cam |
 | mouse drag / wheel | look around the car / zoom |
 | gamepad | RT/LT throttle, left stick steer, right stick altitude, A boost |
 | `C` | fly yourself ⇄ cinematic director |
@@ -49,9 +50,9 @@ URL parameters: `?seed=42` · `?look=Synthwave` (`Neon Noir`, `Replicant Amber`,
 ```
  blender/build.py ──► cybercity.blend ──► blender/export.py ──► public/assets/
    │  gn.py        (Python DSL that writes Geometry Nodes trees)     ├─ kit.glb        25 modular pieces, modifiers applied
-   │  materials.py (17 roles, window-grid shader group)              ├─ car.glb        the KX-9 hover car
+   │  materials.py (22 roles, window-grid shader group)              ├─ car.glb        the KX-11 hover car
    │  kit.py       (25 GN generators: towers, roofs, signs…)         ├─ manifest.json  node-group interfaces = the sliders,
-   │  car.py       (GN loft driven by Float Curves)                  │                 current values, materials, palette
+   │  car.py       (procedural bmesh hover car + cockpit)            │                 current values, materials, palette
    │  city.py      (CC_CityGenerator + CC_Rand)                      └─ parity.json    every instance GN produced
    │
    └─ npm run assets   (finds Blender, runs both stages headless)       npm run parity  ← JS port == Geometry Nodes
@@ -78,7 +79,7 @@ side = g.realize(g.instance(g.mesh_line(n, (-0.42, 0, 0), g.vec(step, 0, 0)), fi
 
 ![kit](docs/kit_sheet.png)
 
-* **Hover car** (`car.py`): a loft whose half-width (coke-bottle fenders), roof line and belly line are **Float Curve** nodes, plus super-ellipse cross sections. Material zones (neon waist line, light bars, canopy frame) are selected from stored loft parameters, so they follow any edit. Under-fender ducted fans, recessed thrusters, ducktail.
+* **Hover car** (`car.py`, `npm run car` rebuilds just the car in ~20 s): the KX-11 Kestrel, a long Spinner-style sedan generated with bmesh. A station-table loft (subdivided, with creased sponson and shoulder character lines) whose top is dished into a real **cockpit tub**, a wraparound glass canopy, a long roof slab with a panoramic glass panel, side thruster nacelles and four ducted hover pads. Panel gaps, light bars, vents and neon lines are snapped onto the subdivided body with BVH ray casts. Inside: bucket seats, dashboard, steering yoke, console and three screens whose UVs map to a live canvas (`CockpitScreens.js`: speed/altitude cluster, moving street map, radio). Mount points (driver's eye, nozzles, trails, lamps) travel to the web build as glTF extras.
 
 ![car](docs/car_sheet.jpg)
 * **City** (`city.py` → `CC_CityGenerator`): 33 inputs in panels *Grid / Skyline / Massing / Details / Palette / Preview*: block grid, lots, mega-blocks, district value-noise, landmarks, stepped setback tiers, neon trims, roofscape, facade signs, LED billboards, skybridges sized against both towers, street lamps, holograms. `Preview Origin X/Y` lets Blender show **any window of the infinite city**.
@@ -122,8 +123,8 @@ It also holds 7,600 km from the origin with another seed and grid (`--set "Seed=
 * **No Z-fighting**: reversed-Z float32 depth (uniform precision from 0.25 m to 4 km), every tower's parts merged with a Mesh Boolean union in Geometry Nodes (no coplanar caps/crowns), neon trims lifted off the roof plane.
 * **3D holograms** (`HoloArt.js`): GN koi schools circling intersections and whales cruising above the skyline (vertex-shader swimming), torii-gate tunnels over the streets (fly through them), a giant kitsune fox running across the sky and a 70 m dancing robot in the canyons (skinned glTF). Plus floating video panels, neon type and generated holo-posters (`PosterAtlas.js`, fictional brands) in `HoloLayer.js`.
 * **Atmosphere**: analytic height fog tinted by the sky, light-polluted clouds, wet asphalt with puddles, lane paint and fake light pools, GPU rain, sweeping searchlights from landmark roofs, holograms.
-* **Hero car**: Blender loft plus physical clearcoat/iridescent paint, a dedicated reflection environment that rotates with distance travelled (neon sliding over the body), headlight spot + underglow, exhaust plumes, twin light trails.
-* **Post stack** (`Post.js`): MRT (beauty, velocity, view normals, reflect mask) → half-res **SSR** on wet streets → camera motion blur → mip bloom + depth-weighted *haze* bloom + anamorphic streaks → chromatic aberration → ACES → contrast/saturation/split-tone grade → FXAA → vignette + grain.
+* **Hero car**: first-person cockpit camera (`F`) with free look, tinted canopy glass that clears from the inside, physical clearcoat/iridescent plum paint, a dedicated reflection environment that rotates with distance travelled (neon sliding over the body), headlight spot + underglow, exhaust plumes, twin light trails.
+* **Post stack** (`Post.js`): MRT (beauty, velocity, view normals, reflect mask) → half-res **SSR** on wet streets → camera motion blur → mip bloom + depth-weighted *haze* bloom + anamorphic streaks → chromatic aberration → ACES → contrast/saturation/split-tone grade → SMAA/FXAA → sharpen → vignette + grain. Every stage is adjustable from the ⚙ Settings panel (saved per browser).
 * **Cinematic director**: 8 shots (pursuit, low angle, head-on, tracking, fly-by, overhead, establishing crane, orbit). Cameras ahead of the car sit on the autopilot's future path, so they never clip into buildings. The autopilot plans turns and altitude and dives **under the skybridges** that GN placed on its street.
 * **Dynamic resolution** keeps the frame rate up on unknown hardware. Dev builds also expose `__app.shot(name, warm, w, h)`, which renders any resolution offscreen and saves a PNG to `captures/` through a Vite endpoint.
 

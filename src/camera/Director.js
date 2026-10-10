@@ -4,10 +4,12 @@
 // are placed on the autopilot's *future* path, so they always stay inside the
 // street canyon instead of clipping into buildings.
 
-import { Vector3, Quaternion, MathUtils } from 'three/webgpu';
+import { Vector3, Quaternion, Euler, MathUtils } from 'three/webgpu';
 
 const UP = new Vector3(0, 1, 0);
 const _f = new Vector3(), _r = new Vector3(), _p = new Vector3(), _l = new Vector3(), _q = new Vector3();
+const _qa = new Quaternion(), _qb = new Quaternion(), _e = new Euler();
+export const DRIVE_CAMS = ['CHASE CAM', 'WIDE CAM', 'COCKPIT', 'HOOD CAM'];
 
 export const SHOTS = ['chase', 'low', 'front', 'side', 'flyby', 'top', 'crane', 'orbit', 'chase'];
 const LABELS = {
@@ -34,13 +36,48 @@ export class Director {
 		this.shake = 1;
 		// pilot camera: mouse-drag orbit offset around the car, eases back when released
 		this.drag = { yaw: 0, pitch: 0, active: false };
-		this.driveCam = 0; // 0 chase, 1 wide, 2 hood
+		this.driveCam = 0; // 0 chase, 1 wide, 2 cockpit (first person), 3 hood
+		this.inCockpit = false;
 		this.zoom = 1; // mouse wheel
 	}
 
 	cycleDriveCam() {
-		this.driveCam = (this.driveCam + 1) % 3;
-		this.onShot?.(['CHASE CAM', 'WIDE CAM', 'HOOD CAM'][this.driveCam]);
+		this.setDriveCam((this.driveCam + 1) % DRIVE_CAMS.length);
+	}
+
+	setDriveCam(i) {
+		this.driveCam = i;
+		this.drag.yaw = this.drag.pitch = 0;
+		this.onShot?.(DRIVE_CAMS[i]);
+	}
+
+	/** First person: rigidly mounted at the driver's eye, free look with the mouse. */
+	_cockpit(dt, car, ap) {
+		if (!this.drag.active) {
+			this.drag.yaw = MathUtils.damp(this.drag.yaw, 0, 2.5, dt);
+			this.drag.pitch = MathUtils.damp(this.drag.pitch, 0, 2.5, dt);
+		}
+		const cam = this.camera, v = Math.abs(ap.speed);
+		car.body.updateMatrixWorld();
+		// the head leans against the bank and settles back under acceleration
+		_p.copy(car.eye).add(_q.set(-MathUtils.clamp(ap.boost, 0, 1) * 0.05, 0, ap.bank * 0.06));
+		const t = performance.now() * 0.001, sh = this.shake * MathUtils.clamp(v / 80, 0, 1.2) * 0.004;
+		_p.x += Math.sin(t * 23.1) * sh;
+		_p.y += Math.sin(t * 31.7 + 1) * sh;
+		car.body.localToWorld(_p);
+		cam.position.copy(_p);
+		car.body.getWorldQuaternion(_qa);
+		_e.set(-0.05 - this.drag.pitch * 0.9, -Math.PI / 2 + this.drag.yaw * 1.4, 0, 'YXZ');
+		cam.quaternion.copy(_qa).multiply(_qb.setFromEuler(_e));
+		const fov = 76 + MathUtils.clamp(v - 25, 0, 90) * 0.12 + ap.boost * 8;
+		this.fov = MathUtils.damp(this.fov, fov, 3, dt);
+		cam.fov = this.fov;
+		cam.near = 0.05;
+		cam.updateProjectionMatrix();
+		// keep the follow-cam state continuous for when we leave the cockpit
+		this.pos.copy(cam.position);
+		this.look.copy(cam.position).add(_q.set(0, 0, -10).applyQuaternion(cam.quaternion));
+		this.roll = 0;
 	}
 
 	attachMouse(el) {
@@ -95,6 +132,9 @@ export class Director {
 	 */
 	update(dt, car, ap, origin) {
 		if (this.mode === 'free') return;
+		this.inCockpit = this.mode === 'drive' && this.driveCam === 2;
+		if (this.inCockpit) { this._cockpit(dt, car, ap); return; }
+		if (this.camera.near !== 0.25) { this.camera.near = 0.25; this.camera.updateProjectionMatrix(); }
 		this.shotTime += dt;
 		if (this.mode === 'cinematic' && this.shotTime > this.shotLen) this._next();
 		const C = car.root.position;
@@ -113,7 +153,7 @@ export class Director {
 				}
 				const cy = Math.cos(this.drag.yaw), sy = Math.sin(this.drag.yaw);
 				fov = 64 + MathUtils.clamp(Math.abs(v) - 25, 0, 90) * 0.28 + ap.boost * 10;
-				if (this.driveCam === 2) {
+				if (this.driveCam === 3) {
 					// hood: just above the canopy, looking down the road
 					_p.copy(C).addScaledVector(_f, 0.9).add(_q.set(0, 1.25, 0));
 					_l.copy(_p).addScaledVector(_f, 30 * cy).addScaledVector(_r, 30 * sy).add(_q.set(0, -1.5 - this.drag.pitch * 20, 0));

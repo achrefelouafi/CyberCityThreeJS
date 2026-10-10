@@ -159,9 +159,8 @@ def main():
             ob.location.y -= 300
 
     veh = colls["CC_Kit_Vehicles"]
-    car_tree = car.hover_car()
-    hero = kit._mk_object("V0_HoverCar", car_tree, veh, (-900 + 160, -300 + 130, 0))
-    kit.KIT["V0_HoverCar"] = {"collection": "CC_Kit_Vehicles", "tree": car_tree, "object": hero}
+    hero = car.build_car(veh, "V0_HoverCar", (-900 + 160, -300 + 130, 0))
+    kit.KIT["V0_HoverCar"] = {"collection": "CC_Kit_Vehicles", "tree": None, "object": hero}
 
     city_coll = new_collection("CC_City")
     tree = city.build_city_tree(colls)
@@ -184,7 +183,9 @@ def main():
 
     # a hero car cruising up an avenue (same node group as the kit car)
     cam_target = (3 * pitch, 2.2 * pitch, 42)
-    car_ob = kit._mk_object("Kestrel", car_tree, city_coll, cam_target)
+    car_ob = bpy.data.objects.new("Kestrel", hero.data)
+    city_coll.objects.link(car_ob)
+    car_ob.location = cam_target
     car_ob.rotation_euler = (0, 0, math.pi / 2)
     cam_data = bpy.data.cameras.new("CC_Cam")
     cam_data.lens = 24

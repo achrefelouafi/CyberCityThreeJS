@@ -1,7 +1,7 @@
 {
  "generator": "Blender 5.1.2",
  "blend": "cybercity.blend",
- "exportedAt": "2026-10-09T23:53:27",
+ "exportedAt": "2026-10-10T01:06:42",
  "coordinateSystem": "glTF Y-up; layout computed in Blender space (x, y, z) -> three (x, z, -y)",
  "city": {
   "nodeGroup": "CC_CityGenerator",
@@ -3512,227 +3512,29 @@
   {
    "name": "V0_HoverCar",
    "collection": "CC_Kit_Vehicles",
-   "nodeGroup": "CC_HoverCar",
-   "inputs": [
-    {
-     "name": "Length",
-     "identifier": "Socket_1",
-     "socketType": "NodeSocketFloat",
-     "description": "Overall length (m)",
-     "panel": "Body",
-     "default": 5.699999809265137,
-     "min": 3.5,
-     "max": 8.0,
-     "subtype": "DISTANCE"
-    },
-    {
-     "name": "Width",
-     "identifier": "Socket_2",
-     "socketType": "NodeSocketFloat",
-     "description": "Overall width (m)",
-     "panel": "Body",
-     "default": 2.25,
-     "min": 1.5,
-     "max": 3.200000047683716,
-     "subtype": "DISTANCE"
-    },
-    {
-     "name": "Height",
-     "identifier": "Socket_3",
-     "socketType": "NodeSocketFloat",
-     "description": "Body height (m)",
-     "panel": "Body",
-     "default": 1.159999966621399,
-     "min": 0.800000011920929,
-     "max": 2.0,
-     "subtype": "DISTANCE"
-    },
-    {
-     "name": "Ride Height",
-     "identifier": "Socket_4",
-     "socketType": "NodeSocketFloat",
-     "description": "Belly clearance (m)",
-     "panel": "Body",
-     "default": 0.3799999952316284,
-     "min": 0.10000000149011612,
-     "max": 1.0,
-     "subtype": "DISTANCE"
-    },
-    {
-     "name": "Squareness",
-     "identifier": "Socket_5",
-     "socketType": "NodeSocketFloat",
-     "description": "Super-ellipse exponent of the cross section",
-     "panel": "Body",
-     "default": 4.800000190734863,
-     "min": 2.0,
-     "max": 8.0,
-     "subtype": "NONE"
-    },
-    {
-     "name": "Resolution",
-     "identifier": "Socket_6",
-     "socketType": "NodeSocketInt",
-     "description": "Loft rings along the body",
-     "panel": "Body",
-     "default": 44,
-     "min": 12,
-     "max": 96,
-     "subtype": "NONE"
-    },
-    {
-     "name": "Subdivision",
-     "identifier": "Socket_7",
-     "socketType": "NodeSocketInt",
-     "description": "",
-     "panel": "Body",
-     "default": 1,
-     "min": 0,
-     "max": 3,
-     "subtype": "NONE"
-    },
-    {
-     "name": "Canopy Start",
-     "identifier": "Socket_9",
-     "socketType": "NodeSocketFloat",
-     "description": "Canopy start along the body (0 = tail)",
-     "panel": "Canopy",
-     "default": 0.36000001430511475,
-     "min": 0.0,
-     "max": 1.0,
-     "subtype": "FACTOR"
-    },
-    {
-     "name": "Canopy End",
-     "identifier": "Socket_10",
-     "socketType": "NodeSocketFloat",
-     "description": "Canopy end along the body",
-     "panel": "Canopy",
-     "default": 0.7300000190734863,
-     "min": 0.0,
-     "max": 1.0,
-     "subtype": "FACTOR"
-    },
-    {
-     "name": "Canopy Height",
-     "identifier": "Socket_11",
-     "socketType": "NodeSocketFloat",
-     "description": "Canopy bulge (m)",
-     "panel": "Canopy",
-     "default": 0.30000001192092896,
-     "min": 0.10000000149011612,
-     "max": 0.8999999761581421,
-     "subtype": "DISTANCE"
-    },
-    {
-     "name": "Canopy Width",
-     "identifier": "Socket_12",
-     "socketType": "NodeSocketFloat",
-     "description": "Canopy width (fraction of body)",
-     "panel": "Canopy",
-     "default": 0.6000000238418579,
-     "min": 0.30000001192092896,
-     "max": 0.949999988079071,
-     "subtype": "FACTOR"
-    },
-    {
-     "name": "Pod Radius",
-     "identifier": "Socket_14",
-     "socketType": "NodeSocketFloat",
-     "description": "Ducted fan radius (m)",
-     "panel": "Propulsion",
-     "default": 0.36000001430511475,
-     "min": 0.20000000298023224,
-     "max": 0.800000011920929,
-     "subtype": "DISTANCE"
-    },
-    {
-     "name": "Pod Spread",
-     "identifier": "Socket_15",
-     "socketType": "NodeSocketFloat",
-     "description": "Pod position along the body (fraction)",
-     "panel": "Propulsion",
-     "default": 0.3199999928474426,
-     "min": 0.15000000596046448,
-     "max": 0.44999998807907104,
-     "subtype": "FACTOR"
-    },
-    {
-     "name": "Thruster Radius",
-     "identifier": "Socket_16",
-     "socketType": "NodeSocketFloat",
-     "description": "Rear thruster radius (m)",
-     "panel": "Propulsion",
-     "default": 0.15000000596046448,
-     "min": 0.07999999821186066,
-     "max": 0.4000000059604645,
-     "subtype": "DISTANCE"
-    },
-    {
-     "name": "Spoiler",
-     "identifier": "Socket_17",
-     "socketType": "NodeSocketBool",
-     "description": "Raised rear wing on struts (off = integrated ducktail)",
-     "panel": "Propulsion",
-     "default": false
-    },
-    {
-     "name": "Waist Line",
-     "identifier": "Socket_19",
-     "socketType": "NodeSocketFloat",
-     "description": "Height of the neon waist line on the cross section",
-     "panel": "Lights",
-     "default": -0.1599999964237213,
-     "min": -0.800000011920929,
-     "max": 0.800000011920929,
-     "subtype": "NONE"
-    },
-    {
-     "name": "Strip Width",
-     "identifier": "Socket_20",
-     "socketType": "NodeSocketFloat",
-     "description": "Neon strip thickness",
-     "panel": "Lights",
-     "default": 0.05000000074505806,
-     "min": 0.004999999888241291,
-     "max": 0.20000000298023224,
-     "subtype": "NONE"
-    }
-   ],
-   "values": {
-    "Length": 5.699999809265137,
-    "Width": 2.25,
-    "Height": 1.159999966621399,
-    "Ride Height": 0.3799999952316284,
-    "Squareness": 4.800000190734863,
-    "Resolution": 44,
-    "Subdivision": 1,
-    "Canopy Start": 0.36000001430511475,
-    "Canopy End": 0.7300000190734863,
-    "Canopy Height": 0.30000001192092896,
-    "Canopy Width": 0.6000000238418579,
-    "Pod Radius": 0.36000001430511475,
-    "Pod Spread": 0.3199999928474426,
-    "Thruster Radius": 0.15000000596046448,
-    "Spoiler": false,
-    "Waist Line": -0.1599999964237213,
-    "Strip Width": 0.05000000074505806
-   },
+   "nodeGroup": null,
+   "inputs": [],
+   "values": {},
    "boundsMin": [
-    -3.0299999713897705,
-    0.24500000476837158,
-    -1.2450001239776611
+    -3.009999990463257,
+    0.3246893584728241,
+    -1.3911170959472656
    ],
    "boundsMax": [
-    2.7174413204193115,
-    1.4442553520202637,
-    1.2450001239776611
+    2.8763413429260254,
+    1.7493035793304443,
+    1.3911170959472656
    ],
-   "triangles": 23264,
+   "triangles": 119319,
    "materials": [
+    "CC_CarChrome",
     "CC_CarGlass",
+    "CC_CarInterior",
+    "CC_CarMarker",
     "CC_CarNeon",
     "CC_CarPaint",
+    "CC_CarScreen",
+    "CC_CarSeat",
     "CC_CarTrim",
     "CC_HeadLight",
     "CC_TailLight",
@@ -3808,6 +3610,22 @@
    ],
    "emissiveStrength": 40.0
   },
+  "CC_CarChrome": {
+   "role": 17,
+   "baseColor": [
+    0.800000011920929,
+    0.800000011920929,
+    0.8500000238418579
+   ],
+   "metallic": 1.0,
+   "roughness": 0.11999999731779099,
+   "emissive": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "emissiveStrength": 0.0
+  },
   "CC_CarGlass": {
    "role": 11,
    "baseColor": [
@@ -3823,6 +3641,38 @@
     1.0
    ],
    "emissiveStrength": 0.0
+  },
+  "CC_CarInterior": {
+   "role": 18,
+   "baseColor": [
+    0.017999999225139618,
+    0.01600000075995922,
+    0.019999999552965164
+   ],
+   "metallic": 0.10000000149011612,
+   "roughness": 0.6000000238418579,
+   "emissive": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "emissiveStrength": 0.0
+  },
+  "CC_CarMarker": {
+   "role": 21,
+   "baseColor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.30000001192092896,
+   "emissive": [
+    1.0,
+    0.44999998807907104,
+    0.05000000074505806
+   ],
+   "emissiveStrength": 20.0
   },
   "CC_CarNeon": {
    "role": 12,
@@ -3849,6 +3699,38 @@
    ],
    "metallic": 0.8999999761581421,
    "roughness": 0.2800000011920929,
+   "emissive": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "emissiveStrength": 0.0
+  },
+  "CC_CarScreen": {
+   "role": 20,
+   "baseColor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.20000000298023224,
+   "emissive": [
+    0.10000000149011612,
+    0.800000011920929,
+    1.0
+   ],
+   "emissiveStrength": 6.0
+  },
+  "CC_CarSeat": {
+   "role": 19,
+   "baseColor": [
+    0.029999999329447746,
+    0.012000000104308128,
+    0.019999999552965164
+   ],
+   "metallic": 0.0,
+   "roughness": 0.5,
    "emissive": [
     1.0,
     1.0,

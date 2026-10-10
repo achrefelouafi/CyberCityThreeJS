@@ -29,6 +29,11 @@ ROLES = [
     (14, "CC_TailLight", (0.0, 0.0, 0.0), (1.0, 0.02, 0.18), 30.0, 0.0, 0.2),
     (15, "CC_Thruster", (0.0, 0.0, 0.0), (0.35, 0.75, 1.0), 30.0, 0.0, 0.2),
     (16, "CC_CarTrim", (0.006, 0.006, 0.008), None, 0.0, 0.4, 0.5),
+    (17, "CC_CarChrome", (0.8, 0.8, 0.85), None, 0.0, 1.0, 0.12),
+    (18, "CC_CarInterior", (0.018, 0.016, 0.02), None, 0.0, 0.1, 0.6),
+    (19, "CC_CarSeat", (0.03, 0.012, 0.02), None, 0.0, 0.0, 0.5),
+    (20, "CC_CarScreen", (0.0, 0.0, 0.0), (0.1, 0.8, 1.0), 6.0, 0.0, 0.2),
+    (21, "CC_CarMarker", (0.0, 0.0, 0.0), (1.0, 0.45, 0.05), 20.0, 0.0, 0.3),
 ]
 
 # Neon palette shared with the city generator (Palette panel) and the web build.

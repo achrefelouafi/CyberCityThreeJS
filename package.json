@@ -8,7 +8,8 @@
     "preview": "vite preview",
     "assets": "node scripts/pipeline.mjs",
     "parity": "node scripts/parity.mjs",
-    "media": "node scripts/fetch-media.mjs"
+    "media": "node scripts/fetch-media.mjs",
+    "car": "node scripts/pipeline.mjs --car"
   },
   "keywords": [],
   "author": "",

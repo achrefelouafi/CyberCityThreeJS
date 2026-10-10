@@ -4,6 +4,7 @@
 //
 //   npm run assets                 build + export
 //   npm run assets -- --render     also render the docs/ images (city, car, kit catalogue)
+//   npm run car                    rebuild only the hover car (add -- --render for studio stills)
 //   BLENDER=/path/to/blender npm run assets
 import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
@@ -39,6 +40,12 @@ function run(blender, args) {
 const blender = findBlender();
 console.log('Using Blender:', blender);
 const render = process.argv.includes('--render');
+if (process.argv.includes('--car')) {
+	// fast path: rebuild only the hover car (blender/car.py) -> public/assets/car.glb (+ docs/car_*.png with --render)
+	run(blender, ['-b', '--factory-startup', '--python', 'blender/car.py', '--', 'public/assets/car.glb', ...(render ? ['docs'] : [])]);
+	console.log('Car rebuilt -> public/assets/car.glb');
+	process.exit(0);
+}
 run(blender, ['-b', '--factory-startup', '--python', 'blender/build.py']);
 run(blender, ['-b', 'blender/cybercity.blend', '--python', 'blender/export.py', '--', '--out', 'public/assets']);
 if (render) {

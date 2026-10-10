@@ -10,7 +10,7 @@
 import { MeshStandardNodeMaterial, Vector3 } from 'three/webgpu';
 import {
 	Fn, If, attribute, uniform, float, int, vec2, vec3, vec4, struct, select, mix, step, smoothstep, clamp, fract, floor,
-	abs, sin, cos, exp, max, min, length, atan, pow, fwidth, texture, positionWorld, normalWorld, uv, time, hash, mod, dot,
+	abs, sin, cos, exp, max, min, length, atan, pow, fwidth, dFdx, dFdy, texture, positionWorld, normalWorld, uv, time, hash, mod, dot,
 	mrt, cameraPosition,
 } from 'three/tsl';
 import { paletteColor } from './palette.js';
@@ -36,6 +36,20 @@ export const archUniforms = {
 
 /** float hash of three ints (wraps on negatives). */
 export const hash3 = Fn(([a, b, c]) => hash(a.toUint().mul(73856093).bitXor(b.toUint().mul(19349663)).bitXor(c.toUint().mul(83492791))));
+
+/**
+ * Fit artwork of aspect `content` (w/h) onto a face of physical aspect `face` without
+ * stretching. cover = crop to fill (video), contain = letterbox (text). Returns
+ * vec3(u, v, inside).
+ */
+const fitUV = (uvIn, face, content, cover) => {
+	const r = face.div(content); // > 1: face is wider than the artwork
+	const wider = r.greaterThan(1.0);
+	const k = select(cover, select(wider, vec2(1, r.reciprocal()), vec2(r, 1)), select(wider, vec2(r, 1), vec2(1, r.reciprocal())));
+	const f = uvIn.sub(0.5).mul(k).add(0.5);
+	const inside = step(0.0, f.x).mul(step(f.x, 1.0)).mul(step(0.0, f.y)).mul(step(f.y, 1.0));
+	return vec3(f, inside);
+};
 
 const ShadeOut = struct({ color: 'vec3', emissive: 'vec3', rough: 'float', metal: 'float' });
 
@@ -162,22 +176,41 @@ const shade = Fn(() => {
 	// ---- everything needing derivatives / implicit-LOD texture fetches is hoisted (WGSL uniformity)
 	const dW = fwidth(vec2(hcoord, P.y)).toVar();
 	const dUV = fwidth(UV).toVar();
+	// physical aspect of the face (metres per U / metres per V), from screen-space
+	// derivatives: kit signs and screens are instanced with non-uniform scale, so
+	// mapping the 0..1 UVs straight onto an atlas cell stretches the artwork
+	const dPx = dFdx(positionWorld), dPy = dFdy(positionWorld), dUx = dFdx(UV), dUy = dFdy(UV);
+	const det = dUx.x.mul(dUy.y).sub(dUx.y.mul(dUy.x));
+	const dPdu = dPx.mul(dUy.y).sub(dPy.mul(dUx.y));
+	const dPdv = dPy.mul(dUx.x).sub(dPx.mul(dUy.x));
+	const faceAspect = select(abs(det).greaterThan(1e-12), length(dPdu).div(max(length(dPdv), 1e-6)), float(1)).clamp(0.05, 20).toVar();
 	const atlasIdx = mod(inst.z, 32);
 	const flagWide = mod(floor(inst.w.mul(0.5)), 2.0).greaterThan(0.5);
 	const isSign = inst.w.greaterThan(3.5);
 	const wide = flagWide;
-	const tallUV = vec2(mod(atlasIdx, 16).add(UV.x.mul(0.96).add(0.02)).mul(ATLAS.tall.w), floor(atlasIdx.div(16)).add(UV.y.mul(0.97).add(0.015)).mul(ATLAS.tall.h));
-	const wideUV = vec2(mod(atlasIdx, 4).add(UV.x.mul(0.97).add(0.015)).mul(ATLAS.wide.w), floor(atlasIdx.div(4)).add(UV.y.mul(0.94).add(0.03)).mul(ATLAS.wide.h).add(ATLAS.wide.y0));
-	// LED screens reuse the atlas: scrolling text (prog 2) / glitch logo (prog 5)
+	// signs keep their artwork's proportions (letterboxed inside the face)
+	const isDisc = mod(floor(inst.w.mul(0.125)), 2.0).greaterThan(0.5);
+	const cellAspect = select(wide, float(ATLAS.wide.w * 0.97 / (ATLAS.wide.h * 0.94)), select(isDisc, float(1), float(ATLAS.tall.w * 0.96 / (ATLAS.tall.h * 0.97))));
+	const sf = fitUV(UV, faceAspect, cellAspect, false).toVar();
+	const sUV = sf.xy.clamp(0.0, 1.0);
+	const signMask = sf.z;
+	const tallUV = vec2(mod(atlasIdx, 16).add(sUV.x.mul(0.96).add(0.02)).mul(ATLAS.tall.w), floor(atlasIdx.div(16)).add(sUV.y.mul(0.97).add(0.015)).mul(ATLAS.tall.h));
+	const wideUV = vec2(mod(atlasIdx, 4).add(sUV.x.mul(0.97).add(0.015)).mul(ATLAS.wide.w), floor(atlasIdx.div(4)).add(sUV.y.mul(0.94).add(0.03)).mul(ATLAS.wide.h).add(ATLAS.wide.y0));
+	// LED screens reuse the atlas: scrolling text (prog 2) tiles along U at the true aspect,
+	// glitch logo (prog 5) is letterboxed
 	const isScreen = role.greaterThan(5.5).and(role.lessThan(6.5));
 	const scrollIdx = mod(floor(time.mul(0.25).add(seed.mul(17))), 32);
 	const glitch = step(0.93, hash(floor(UV.y.mul(24)).toInt().toUint().add(floor(time.mul(8)).toInt().toUint()))).mul(0.06);
-	const scrollU = select(inst.z.lessThan(2.5), fract(UV.x.mul(0.5).add(time.mul(0.12))), UV.x.add(glitch));
-	const scrUV = vec2(mod(scrollIdx, 4).add(scrollU.mul(0.97).add(0.015)).mul(ATLAS.wide.w), floor(scrollIdx.div(4)).add(UV.y.mul(0.94).add(0.03)).mul(ATLAS.wide.h).add(ATLAS.wide.y0));
+	const wideAspect = float(ATLAS.wide.w * 0.97 / (ATLAS.wide.h * 0.94));
+	const logo = fitUV(UV, faceAspect, wideAspect, false);
+	const scrollU = select(inst.z.lessThan(2.5), fract(UV.x.mul(faceAspect.div(wideAspect)).add(time.mul(0.12))), logo.x.clamp(0.0, 1.0).add(glitch));
+	const scrV = select(inst.z.lessThan(2.5), UV.y, logo.y.clamp(0.0, 1.0));
+	const scrUV = vec2(mod(scrollIdx, 4).add(scrollU.mul(0.97).add(0.015)).mul(ATLAS.wide.w), floor(scrollIdx.div(4)).add(scrV.mul(0.94).add(0.03)).mul(ATLAS.wide.h).add(ATLAS.wide.y0));
 	// disc signs (flag 8): one big glyph from the top of a tall design, inside a neon ring
-	const isDisc = mod(floor(inst.w.mul(0.125)), 2.0).greaterThan(0.5);
-	const discUV = vec2(mod(atlasIdx, 16).add(UV.x.mul(0.8).add(0.1)).mul(ATLAS.tall.w), floor(atlasIdx.div(16)).add(UV.y.mul(0.24).add(0.06)).mul(ATLAS.tall.h));
+	const discUV = vec2(mod(atlasIdx, 16).add(sUV.x.mul(0.8).add(0.1)).mul(ATLAS.tall.w), floor(atlasIdx.div(16)).add(sUV.y.mul(0.24).add(0.06)).mul(ATLAS.tall.h));
 	const aUV = select(isScreen, scrUV, select(wide, wideUV, select(isDisc, discUV, tallUV))).div(ATLAS.size);
+	// video: crop to fill the screen at 16:9
+	const vfit = fitUV(UV, faceAspect, float(16 / 9), true).toVar();
 	const atl = texture(signAtlasNode.value, aUV).toVar();
 
 	const color = vec3(0.03).toVar();
@@ -342,7 +375,7 @@ const shade = Fn(() => {
 		const cB = paletteColor(mod(hue.add(floor(hs.mul(3)).add(1)), 4));
 		const flick = select(hs.lessThan(0.08), step(0.3, sin(time.mul(hs.mul(60).add(11))).add(sin(time.mul(7.7)))).mul(0.9).add(0.1), float(1));
 		const core = smoothstep(0.9, 1.0, atl.x).mul(0.15);
-		const discMask = select(isDisc, smoothstep(0.5, 0.46, length(UV.sub(0.5))), float(1));
+		const discMask = select(isDisc, smoothstep(0.5, 0.46, length(sUV.sub(0.5))), float(1)).mul(signMask);
 		emissive.assign(cA.mul(atl.x.mul(atl.x)).add(cB.mul(atl.y.mul(atl.y))).add(vec3(core)).add(cA.mul(atl.z).mul(0.05)).mul(U.signI).mul(flick).mul(discMask));
 		color.assign(vec3(0.01));
 		rough.assign(0.3);
@@ -355,7 +388,8 @@ const shade = Fn(() => {
 		If(U.videoOn.greaterThan(0.5).and(inst.z.lessThan(4.5)), () => {
 			const tile = U.screenBase.add(mod(inst.z.add(floor(seed.mul(13))), U.screenCount));
 			const col = mod(tile, 4), row = floor(tile.div(4));
-			const vuv = vec2(col.add(suv.x).div(4), float(1).sub(row.add(float(1).sub(suv.y)).div(4)));
+			const fv = vec2(vfit.x, vfit.y.oneMinus());
+			const vuv = vec2(col.add(fv.x).div(4), float(1).sub(row.add(float(1).sub(fv.y)).div(4)));
 			const glitchX = step(0.97, hash(floor(suv.y.mul(40)).toInt().toUint().add(floor(time.mul(10)).toInt().toUint()).add(int(seed.mul(999)).toUint()))).mul(0.02);
 			c.assign(texture(videoAtlasNode.value, vuv.add(vec2(glitchX.div(4), 0))).level(0).rgb.mul(1.8));
 		}).Else(() => {
