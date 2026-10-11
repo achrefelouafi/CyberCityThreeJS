@@ -1,8 +1,3 @@
-import '@fontsource/orbitron/800.css';
-import '@fontsource/rajdhani/700.css';
-import '@fontsource/monoton/400.css';
-import '@fontsource/noto-sans-jp/900.css';
-import './style.css';
 
 import { WebGPURenderer, PerspectiveCamera, Scene, Timer, Vector3, Vector2, HemisphereLight, Color, DirectionalLight, RenderTarget, UnsignedByteType, MathUtils } from 'three/webgpu';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -27,6 +22,7 @@ import { Director, SHOTS, DRIVE_CAMS } from './camera/Director.js';
 import { Post } from './post/Post.js';
 import { buildGui } from './ui/Gui.js';
 import { Capture } from './ui/Capture.js';
+import { Contact } from './ui/Contact.js';
 import { LOOKS } from './looks.js';
 import { TitleCard } from './ui/TitleCard.js';
 import { VideoAtlas } from './media/VideoAtlas.js';
@@ -524,7 +520,8 @@ async function main() {
 		renderer.setMRT(null);
 	}
 	progress(1, 'ONLINE');
-	setTimeout(() => $('loader').classList.add('done'), 300);
+	const contactCard = new Contact($('hud'));
+	setTimeout(() => { $('loader').classList.add('done'); contactCard.reveal(); }, 300);
 	if (!params.has('notitle')) setTimeout(playTitle, 700);
 	director.setMode('cinematic');
 	director._start(params.get('shot') ?? 'crane'); // open on an establishing crane
