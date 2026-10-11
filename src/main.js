@@ -35,6 +35,7 @@ import { HoloLayer, holoLayerUniforms } from './world/HoloLayer.js';
 import { Wires, wireUniforms } from './world/Wires.js';
 import { HoloArt, holoArtUniforms } from './world/HoloArt.js';
 import { installLightCulling } from './materials/lightCulling.js';
+import { precompile } from './utils/precompile.js';
 import { XRDrive, XR_VIEWS, wantsXRBackend, xrSupport, isHeadsetBrowser } from './xr/XRDrive.js';
 
 const $ = (id) => document.getElementById(id);
@@ -187,9 +188,10 @@ async function main() {
 	const vrBtn = $('vr-btn');
 	const vrUi = { toggle: () => toggleVR(), xrBackend: !!renderer.backend.isWebGLBackend && xrBackend, view: XR_VIEWS[0] };
 	let normalRadius = city.radius;
+	let vrSupport = null; // last xrSupport() answer: the click handler must not await it (see toggleVR)
 	const setVrButton = async () => {
 		if (xr.presenting) { vrBtn.innerHTML = '◉ EXIT VR <b>X</b>'; vrBtn.classList.remove('ready'); return; }
-		const sup = await xrSupport();
+		const sup = vrSupport = await xrSupport();
 		vrBtn.classList.toggle('na', !sup.ok);
 		vrBtn.title = sup.ok ? 'Fly the Kestrel in your headset (X)' : sup.why;
 		vrBtn.innerHTML = sup.ok && xrBackend ? '◉ ENTER VR <b>X</b>' : '◉ VR <b>X</b>';
@@ -206,17 +208,19 @@ async function main() {
 		u.searchParams.set('xr', xrOn ? '1' : '0');
 		location.href = u.toString();
 	};
-	async function toggleVR() {
+	function toggleVR() {
 		if (xr.presenting) { xr.exit(); return; }
-		const sup = await xrSupport();
-		if (!sup.ok) { director.onShot(sup.why); return; }
+		if (vrSupport && !vrSupport.ok) { director.onShot(vrSupport.why); return; }
 		if (!renderer.backend.isWebGLBackend) {
 			// this canvas runs on WebGPU, which can't present to WebXR yet: reboot on the XR renderer
 			director.onShot('SWITCHING TO THE XR RENDERER…');
 			setTimeout(() => reloadWith(true), 400);
 			return;
 		}
-		try { await xr.enter(); } catch (e) { console.error(e); director.onShot('VR FAILED: ' + String(e.message ?? e).toUpperCase()); }
+		// requestSession() is only allowed inside the click's user activation, so it is called
+		// right here with nothing awaited first (the headset shows its own loading screen
+		// until the stereo shaders are ready)
+		xr.enter().catch((e) => { console.error(e); director.onShot('VR FAILED: ' + String(e.message ?? e).toUpperCase()); });
 	}
 	xr.onAutopilot = (on) => {
 		if (on && pilot) { exitPilot('chase'); xr.say('AUTOPILOT ENGAGED · LOOK AROUND', 3); }
@@ -497,11 +501,27 @@ async function main() {
 	// ------------------------------------------------------------------ compile, then go
 	progress(0.8, 'COMPILING WEBGPU PIPELINES');
 	director.update(0.016, car, ap, city.origin);
-	await renderer.compileAsync(scene, camera);
-	if (vrUi.xrBackend) {
-		// headset-ready boot: build the stereo shaders now, so ENTER VR doesn't sit in the dark compiling
-		progress(0.9, 'COMPILING VR PIPELINES');
-		await xr.prewarm(camera);
+	// compile what the first frames actually draw: the post stack's scene pass (its render
+	// target + MRT outputs), not a plain canvas render — otherwise the page froze for a while
+	// right after the loader (and swallowed clicks), compiling it all on the first frames.
+	// three keys shader builds by render context, which includes how deeply nested the render
+	// call is, and the pass renders nested inside the post effects: one frame with an empty
+	// scene compiles the post stack itself and tells us that depth.
+	const contexts = renderer._renderContexts, contextAt = contexts.get, sceneMRT = post.scenePass.getMRT();
+	let passDepth = 0;
+	contexts.get = (target, mrt, depth) => { if (mrt === sceneMRT) passDepth = depth; return contextAt.call(contexts, target, mrt, depth); };
+	post.scenePass.scene = new Scene();
+	post.render();
+	post.scenePass.scene = scene;
+	contexts.get = (target, mrt) => contextAt.call(contexts, target, mrt, passDepth);
+	renderer.setRenderTarget(post.scenePass.renderTarget);
+	renderer.setMRT(sceneMRT);
+	try {
+		await precompile(renderer, scene, camera, { onProgress: (f) => progress(0.8 + f * 0.19) });
+	} finally {
+		contexts.get = contextAt;
+		renderer.setRenderTarget(null);
+		renderer.setMRT(null);
 	}
 	progress(1, 'ONLINE');
 	setTimeout(() => $('loader').classList.add('done'), 300);
@@ -509,11 +529,13 @@ async function main() {
 	director.setMode('cinematic');
 	director._start(params.get('shot') ?? 'crane'); // open on an establishing crane
 	if (!params.has('cinematic') && !params.has('shot') && !kiosk) setTimeout(() => { if (!pilot) enterPilot(); }, params.has('notitle') ? 0 : 2600);
+	// headset-ready boot: build the stereo shaders in the background, so ENTER VR doesn't sit in the dark
+	if (vrUi.xrBackend) setTimeout(() => xr.prewarm(camera), 1500);
 
 	const timer = new Timer();
 	timer.connect(document);
 	const prevCar = new Vector3().copy(car.root.position);
-	let fpsAcc = 0, fpsN = 0, hudSector = '', hudFps = 0;
+	let fpsAcc = 0, fpsN = 0, hudSector = '', hudFps = 0, yokeAngle = 0;
 	const frame = (dt) => {
 		// who flies the car: autopilot, or the player as soon as they touch the controls
 		const vr = xr.presenting;
@@ -547,6 +569,11 @@ async function main() {
 			controls.target.copy(car.root.position);
 			controls.update();
 		} else director.update(dt, car, fs, city.origin);
+		if (!vr) {
+			// the cockpit yoke turns with the steering (in VR, XRDrive drives it from your hands)
+			yokeAngle = MathUtils.damp(yokeAngle, -(ctl ? ctl.steer : MathUtils.clamp(fs.bank * 1.2, -1, 1)) * 0.9, 8, dt);
+			car.setYoke(yokeAngle);
+		}
 		const inside = vr ? xr.inCockpit : camState.mode === 'drive' && director.inCockpit;
 		carUniforms.inside.value = MathUtils.damp(carUniforms.inside.value, inside ? 1 : 0, 10, dt);
 		document.body.classList.toggle('cockpit', inside && !vr);

@@ -65,6 +65,12 @@ STATIONS = [
 X0, X1 = STATIONS[0][0], STATIONS[-1][0]
 Z_FLOOR = 0.50     # cockpit floor
 EYE = Vector((-0.50, 0.40, 1.17))  # driver's eye (Blender space)
+YOKE_HUB = Vector((0.43, EYE.y, 0.95))
+YOKE_UP = Vector((0.34, 0, 0.94)).normalized()
+YOKE_RIGHT = Vector((0, -1, 0))
+YOKE_AXIS = YOKE_RIGHT.cross(YOKE_UP).normalized()
+if YOKE_AXIS.x > 0:
+    YOKE_AXIS = -YOKE_AXIS  # towards the driver
 
 
 def canopy_top(x):
@@ -717,23 +723,23 @@ def build_interior(coll, hull):
     screen(B, (0.645, 0.0, 0.93), 0.24, 0.30, (-0.30, 0, 0.95), (0.0, 0.1875, 0.40, 0.6875), None)
     screen(B, (0.70, -0.40, 1.02), 0.40, 0.10, (0.25, 0, 1), (0.41, 0.54, 1.0, 0.6875), None)
 
-    # ---- steering yoke
-    hub = Vector((0.43, EYE.y, 0.95))
-    upv = Vector((0.34, 0, 0.94)).normalized()
-    right = Vector((0, -1, 0))
+    # ---- steering yoke: its own object (pivot at the hub) so the game can turn it;
+    # the column stays with the dash
+    Y = Builder()
     loop2d = [(-0.17, 0.05), (-0.185, -0.03), (-0.15, -0.09), (-0.06, -0.10), (0.06, -0.10), (0.15, -0.09), (0.185, -0.03), (0.17, 0.05), (0.12, 0.075), (-0.12, 0.075)]
-    path = catmull([hub + right * u + upv * v for u, v in loop2d], n_per=5, closed=True)
-    B.sweep(path, 0.018, "CC_CarTrim", segs=10, closed=True)
+    path = catmull([YOKE_HUB + YOKE_RIGHT * u + YOKE_UP * v for u, v in loop2d], n_per=5, closed=True)
+    Y.sweep(path, 0.018, "CC_CarTrim", segs=10, closed=True)
     for s in (-1, 1):
-        B.sweep(catmull([hub + right * (s * 0.17) + upv * 0.0, hub + right * (s * 0.09) + upv * -0.01, hub], n_per=4), 0.013, "CC_CarTrim", segs=8)
-    nrm = right.cross(upv).normalized()
-    if nrm.x > 0:
-        nrm = -nrm
-    B.cyl(hub - nrm * 0.02, hub + nrm * 0.03, 0.055, 0.05, "CC_CarTrim", segs=24)
-    B.lathe([(0.0, 0.05), (0.0, 0.058)], hub + nrm * 0.031, nrm, ["CC_CarNeon"], segs=24)
-    B.cyl(hub - nrm * 0.02, Vector((0.74, EYE.y, 0.90)), 0.028, 0.035, "CC_CarTrim", segs=16)
+        Y.sweep(catmull([YOKE_HUB + YOKE_RIGHT * (s * 0.17) + YOKE_UP * 0.0, YOKE_HUB + YOKE_RIGHT * (s * 0.09) + YOKE_UP * -0.01, YOKE_HUB], n_per=4), 0.013, "CC_CarTrim", segs=8)
+    nrm = YOKE_AXIS
+    Y.cyl(YOKE_HUB - nrm * 0.02, YOKE_HUB + nrm * 0.03, 0.055, 0.05, "CC_CarTrim", segs=24)
+    Y.lathe([(0.0, 0.05), (0.0, 0.058)], YOKE_HUB + nrm * 0.031, nrm, ["CC_CarNeon"], segs=24)
     for s in (-1, 1):  # paddle shifters
-        B.box(hub + right * (s * 0.10) - nrm * 0.035 + upv * 0.02, (0.012, 0.05, 0.07), "CC_CarChrome", bevel=0.004)
+        Y.box(YOKE_HUB + YOKE_RIGHT * (s * 0.10) - nrm * 0.035 + YOKE_UP * 0.02, (0.012, 0.05, 0.07), "CC_CarChrome", bevel=0.004)
+    B.cyl(YOKE_HUB - nrm * 0.02, Vector((0.74, EYE.y, 0.90)), 0.028, 0.035, "CC_CarTrim", segs=16)
+    yoke = Y.to_object("Yoke", coll)
+    yoke.data.transform(Matrix.Translation(-YOKE_HUB))
+    yoke.location = YOKE_HUB
 
     # ---- seats
     for sy in (EYE.y, -EYE.y):
@@ -766,7 +772,7 @@ def build_interior(coll, hull):
         B.ribbon([hull.inner(x, 0.75, s) for x in linspace(-0.95, 0.6, 30)], 0.06, "CC_CarSeat", depth=0.02, lift=0.004)
     # rear bulkhead logo strip
     B.box((-1.22, 0, 0.82), (0.02, 0.9, 0.012), "CC_CarNeon")
-    return B.to_object("interior", coll)
+    return B.to_object("interior", coll), yoke
 
 
 # ---------------------------------------------------------------------------- assembly
@@ -783,7 +789,7 @@ def build_car(coll, name="V0_HoverCar", location=(0, 0, 0)):
     roof_ob, roof_bm = build_roof(coll)
     hull_s, roof_s = Surface(hull_bm), Surface(roof_bm)
     det_ob = build_details(coll, hull_s, roof_s)
-    int_ob = build_interior(coll, hull_s)
+    int_ob, yoke_ob = build_interior(coll, hull_s)
     for b in (hull_bm, canopy_bm, roof_bm):
         b.free()
 
@@ -797,6 +803,8 @@ def build_car(coll, name="V0_HoverCar", location=(0, 0, 0)):
     car.name = name
     car.data.name = name + "_mesh"
     car.location = location
+    yoke_ob.parent = car
+    yoke_ob.location = YOKE_HUB  # in the car's space (no parent inverse)
     # anchors in three.js space, read by src/vehicle/HoverCar.js
     anchors = {
         "eye": three(EYE),
@@ -805,6 +813,7 @@ def build_car(coll, name="V0_HoverCar", location=(0, 0, 0)):
         "head": three(Vector((2.80, 0, 0.64))),
         "tail": three(Vector((-2.9, 0, 0.86))),
         "cabin": three(Vector((0.0, 0, 1.15))),
+        "yoke": {"hub": three(YOKE_HUB), "axis": three(YOKE_AXIS)},  # node "Yoke": turns about axis (points at the driver)
         "pads": [three(Vector((px, s * 0.62 * station(px)[0], station(px)[1] - 0.05))) for px in (1.55, -1.75) for s in (1, -1)],
         "screenAtlas": {"cluster": [0, 0, 1024, 320], "centre": [0, 320, 410, 832], "passenger": [420, 320, 1024, 470]},
     }
@@ -857,6 +866,8 @@ def main():
     car = build_car(bpy.context.scene.collection)
     bpy.ops.object.select_all(action="DESELECT")
     car.select_set(True)
+    for ch in car.children:
+        ch.select_set(True)
     bpy.context.view_layer.objects.active = car
     bpy.ops.export_scene.gltf(
         filepath=out, export_format="GLB", use_selection=True, export_apply=True, export_yup=True,

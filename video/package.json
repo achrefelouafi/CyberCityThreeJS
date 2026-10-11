@@ -1,0 +1,13 @@
+{
+  "name": "neo-kyoto-video",
+  "private": true,
+  "type": "module",
+  "description": "Offline, frame-exact 1080p60 renders of NEO//KYOTO for social video",
+  "scripts": {
+    "clip": "node lib/render.mjs",
+    "master": "node lib/master.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.43.1"
+  }
+}

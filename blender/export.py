@@ -126,6 +126,8 @@ def main():
     for cname in KIT_COLLS:
         coll = bpy.data.collections[cname]
         for ob in sorted(coll.objects, key=lambda o: o.name):
+            if ob.parent is not None:
+                continue  # sub-parts (the car's yoke) travel with their parent
             tree, vals = modifier_values(ob)
             rec = {"name": ob.name, "collection": cname, "nodeGroup": tree.name if tree else None,
                    "inputs": iface_inputs(tree) if tree else [], "values": vals}
@@ -140,7 +142,7 @@ def main():
     # the car is exported alone, at the origin
     loc = car_obj.location.copy()
     car_obj.location = (0, 0, 0)
-    export_glb([car_obj], os.path.join(OUT, "car.glb"))
+    export_glb([car_obj, *car_obj.children], os.path.join(OUT, "car.glb"))
     car_obj.location = loc
 
     # ------------------------------------------------------------ city generator

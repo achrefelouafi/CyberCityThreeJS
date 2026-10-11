@@ -1,7 +1,7 @@
 // WebXR drive mode (Meta Quest 3, or any immersive-vr headset).
 //
 // You sit in the Kestrel's cockpit at the driver's eye and fly it with the Touch
-// controllers, or grab the holographic yoke with both grips and steer it like a
+// controllers, or grab the yoke with both grips and steer it like a
 // real wheel. Three views: COCKPIT, CHASE (1:1, behind the car) and DIORAMA (you
 // are 28x scale: the city becomes a miniature model with the car weaving through
 // it). Haptics on impacts and boost, a holo dash HUD, a wrist computer on the
@@ -13,13 +13,14 @@
 // the headset pose, so everything streams around your head exactly as on desktop.
 
 import {
-	Group, PerspectiveCamera, Mesh, PlaneGeometry, SphereGeometry, TorusGeometry, CylinderGeometry, BoxGeometry,
-	MeshBasicNodeMaterial, CanvasTexture, SRGBColorSpace, BackSide, FrontSide, DoubleSide, AdditiveBlending,
-	Vector3, Euler, MathUtils, ACESFilmicToneMapping, ArrayCamera, RenderTarget,
+	Group, PerspectiveCamera, Mesh, PlaneGeometry, SphereGeometry, TorusGeometry, Scene,
+	MeshBasicNodeMaterial, CanvasTexture, SRGBColorSpace, BackSide, DoubleSide, AdditiveBlending,
+	Vector3, Euler, MathUtils, ACESFilmicToneMapping, ArrayCamera,
 } from 'three/webgpu';
-import { uniform, float, vec3, positionLocal, normalize, dot, acos, smoothstep, max, texture, uv, sin, time, mix, fract, abs } from 'three/tsl';
+import { uniform, float, vec2, vec3, positionLocal, normalize, dot, acos, smoothstep, max, texture, uv, sin, time, mix, fract, abs, exp, fwidth, length, min } from 'three/tsl';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 import { carUniforms } from '../vehicle/HoverCar.js';
+import { precompile } from '../utils/precompile.js';
 
 export const XR_VIEWS = ['COCKPIT', 'CHASE', 'DIORAMA'];
 const GIANT = 28; // diorama scale: you are 28x bigger than the city
@@ -29,7 +30,6 @@ const _v = new Vector3(), _w = new Vector3(), _e = new Euler(), _s = new Vector3
 export const xrUniforms = {
 	vignette: uniform(0), // 0..1 comfort tunnel
 	fade: uniform(0), // 0..1 black (view switches, autopilot hand-off)
-	yokeGlow: uniform(0),
 };
 
 /** Is this a standalone headset browser (Quest), where the XR backend should be the default? */
@@ -90,35 +90,76 @@ function frame(g, W, H, col, alpha = 0.45) {
 
 const css = (c) => `rgb(${Math.round(Math.min(c.r, 1) * 255)}, ${Math.round(Math.min(c.g, 1) * 255)}, ${Math.round(Math.min(c.b, 1) * 255)})`;
 
-// ---------------------------------------------------------------------------- the yoke
-function buildYoke() {
-	const m = new MeshBasicNodeMaterial({ transparent: true, blending: AdditiveBlending, depthWrite: false, side: DoubleSide });
-	const p = positionLocal;
-	const bands = smoothstep(0.35, 0.5, abs(fract(p.x.mul(40).add(time.mul(0.8))).sub(0.5))).mul(0.5).add(0.5);
-	m.colorNode = carUniforms.neon.mul(mix(float(0.55), float(2.4), xrUniforms.yokeGlow)).mul(bands);
-	const yoke = new Group();
-	yoke.name = 'HoloYoke';
-	const R = 0.17;
-	// open-top racing yoke: lower arc + two grips + hub spokes
-	const arc = new Mesh(new TorusGeometry(R, 0.011, 8, 64, Math.PI * 1.25), m);
-	arc.rotation.z = Math.PI + (Math.PI - Math.PI * 1.25) / 2;
-	yoke.add(arc);
-	for (const s of [-1, 1]) {
-		const grip = new Mesh(new CylinderGeometry(0.018, 0.018, 0.11, 12, 1, true), m);
-		grip.position.set(s * R * 0.93, 0.03, 0);
-		grip.rotation.z = s * 0.25;
-		yoke.add(grip);
-		const spoke = new Mesh(new BoxGeometry(R * 0.8, 0.008, 0.008), m);
-		spoke.position.set(s * R * 0.45, -0.025, 0);
-		spoke.rotation.z = s * -0.25;
-		yoke.add(spoke);
-	}
-	const hub = new Mesh(new CylinderGeometry(0.035, 0.035, 0.012, 24), m);
-	hub.rotation.x = Math.PI / 2;
-	hub.position.y = -0.03;
-	yoke.add(hub);
-	yoke.traverse((o) => { o.frustumCulled = false; o.renderOrder = 15; });
-	return yoke;
+// ---------------------------------------------------------------------------- VR loading lobby
+// Shown in the headset while the city's stereo shaders are still compiling (VR entered
+// before the background prewarm finished): its own tiny scene, so nothing else needs to
+// be ready. Lives in the seat's frame: the panel floats ahead of the driver's eye.
+function buildLobby() {
+	const scene = new Scene();
+	const root = new Group();
+	root.matrixAutoUpdate = false;
+	scene.add(root);
+	const pink = vec3(1.0, 0.18, 0.63), cyan = vec3(0.1, 0.84, 1.0);
+	// night dome with a magenta horizon band
+	const dome = new MeshBasicNodeMaterial({ side: BackSide, depthWrite: false });
+	const dy = normalize(positionLocal).y;
+	dome.colorNode = mix(vec3(0.006, 0.004, 0.02), pink.mul(0.35), exp(abs(dy).mul(-9.0))).add(cyan.mul(0.05).mul(exp(abs(dy.sub(0.02)).mul(-60.0))));
+	const sky = new Mesh(new SphereGeometry(40, 32, 16), dome);
+	// neon grid floor rushing towards you
+	const gm = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: AdditiveBlending });
+	const gp = positionLocal.xz;
+	const cell = vec2(gp.x.div(2.0), gp.y.div(2.0).add(time.mul(1.6)));
+	const d = float(0.5).sub(abs(fract(cell).sub(0.5))), w = fwidth(cell).mul(1.5); // distance to the nearest line
+	const line = max(smoothstep(float(0), w.x, d.x).oneMinus(), smoothstep(float(0), w.y, d.y).oneMinus());
+	gm.colorNode = mix(cyan, pink, smoothstep(4.0, 30.0, length(gp))).mul(line).mul(smoothstep(38.0, 6.0, length(gp)));
+	const grid = new Mesh(new PlaneGeometry(80, 80).rotateX(-Math.PI / 2), gm);
+	grid.position.y = -1.4;
+	// the panel, framed by a slowly turning ring
+	const panel = new HoloPanel(1.6, 0.9, 1024);
+	panel.mesh.position.set(0, 0.05, -2.3);
+	const rm = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: AdditiveBlending });
+	rm.colorNode = mix(pink, cyan, sin(time.mul(1.3)).mul(0.5).add(0.5)).mul(min(float(1), sin(positionLocal.x.mul(3).add(time.mul(2))).mul(0.5).add(0.7)));
+	const ring = new Mesh(new TorusGeometry(1.08, 0.006, 6, 160), rm);
+	ring.position.copy(panel.mesh.position);
+	for (const o of [sky, grid, panel.mesh, ring]) { o.frustumCulled = false; root.add(o); }
+	return { scene, root, panel, ring, shown: -1 };
+}
+
+function drawLobby(panel, progress) {
+	const { g, canvas: { width: W, height: H } } = panel;
+	const pink = '#ff2fa0', cyan = '#18d6ff';
+	frame(g, W, H, cyan, 0.88);
+	g.textAlign = 'center';
+	g.textBaseline = 'alphabetic';
+	g.font = '900 54px "Noto Sans JP", sans-serif';
+	g.fillStyle = pink;
+	g.shadowColor = pink;
+	g.shadowBlur = 20;
+	g.fillText('新京都', W / 2, 120);
+	g.font = '800 72px Orbitron, sans-serif';
+	g.fillStyle = '#e8f6ff';
+	g.shadowColor = cyan;
+	g.fillText('NEO//KYOTO', W / 2, 205);
+	g.shadowBlur = 0;
+	g.font = '700 30px Rajdhani, sans-serif';
+	g.fillStyle = cyan;
+	g.fillText('SPOOLING UP · COMPILING THE CITY FOR YOUR EYES', W / 2, 262);
+	// progress bar
+	const bw = W * 0.7, bx = (W - bw) / 2, by = 300, bh = 22;
+	g.fillStyle = 'rgba(255,255,255,0.1)';
+	g.fillRect(bx, by, bw, bh);
+	g.fillStyle = pink;
+	g.shadowColor = pink;
+	g.shadowBlur = 18;
+	g.fillRect(bx, by, bw * progress, bh);
+	g.shadowBlur = 0;
+	g.font = '800 40px Orbitron, sans-serif';
+	g.fillStyle = '#e8f6ff';
+	g.fillText(`${Math.round(progress * 100)}%`, W / 2, 380);
+	g.font = '700 26px Rajdhani, sans-serif';
+	g.fillStyle = 'rgba(220,240,255,0.75)';
+	g.fillText('GRIP ×2  GRAB THE YOKE   ·   RT  THRUST   ·   A  BOOST   ·   B  VIEW   ·   Y  RECENTER', W / 2, 452);
+	panel.commit();
 }
 
 // ---------------------------------------------------------------------------- XR drive
@@ -162,13 +203,9 @@ export class XRDrive {
 		this.tunnel.frustumCulled = false;
 		this.camera.add(this.tunnel);
 
-		// holographic yoke in front of the driver
-		this.yoke = buildYoke();
-		this.yoke.position.set(0, -0.36, -0.44);
-		this.yoke.rotation.x = -0.35;
-		this.yoke.visible = false;
-		this.seat.add(this.yoke);
 		this.grab = { active: false, z0: 0, angle: 0, steer: 0, lift: 0 };
+
+		this.lobby = buildLobby();
 
 		// dash HUD (scale-invariant: it lives in anchor space)
 		this.dash = new HoloPanel(0.62, 0.2, 1024);
@@ -213,27 +250,36 @@ export class XRDrive {
 
 	// ------------------------------------------------------------------ session
 	async enter() {
-		if (this.presenting) return;
-		const xr = this.renderer.xr;
-		xr.setFramebufferScaleFactor(this.opts.framebufferScale);
-		xr.setFoveation(this.opts.foveation);
-		const session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'layers'] });
-		await xr.setSession(session);
+		if (this.presenting || this._entering) return;
+		this._entering = true;
+		try {
+			const xr = this.renderer.xr;
+			xr.setFramebufferScaleFactor(this.opts.framebufferScale);
+			xr.setFoveation(this.opts.foveation);
+			const session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'layers'] });
+			await xr.setSession(session);
+		} finally {
+			this._entering = false;
+		}
 	}
 
 	/**
-	 * Build the headset's shader variants ahead of time (call during loading, before the
-	 * animation loop runs). In a session every material needs a stereo variant (multiview,
-	 * per-eye camera arrays, no motion-vector MRT), and three compiles those one after
-	 * another — that was a long black screen after pressing ENTER VR. Here we compile
-	 * against a stand-in for the XR target and camera; three caches node builds by material
-	 * + camera layout and GL programs by source, so the session finds them all ready.
+	 * Build the headset's shader variants in the background, so ENTER VR doesn't sit in the
+	 * dark compiling. In a session every material needs a stereo variant (multiview, per-eye
+	 * camera arrays, no motion-vector MRT) and three builds those one after another — that
+	 * was the long black screen. three caches node builds by material + camera layout and GL
+	 * programs by source, so compiling against a stand-in 2-eye camera here makes the
+	 * session's builds cache hits. Nothing the flat view renders is touched: MRT-free
+	 * material copies are swapped in only for compileAsync's synchronous scene walk.
 	 */
-	async prewarm(view) {
+	prewarm(view) {
+		return (this._prewarm ??= this._prewarmRun(view).then(() => { this._prewarmed = true; }, (e) => console.warn('XR prewarm', e)));
+	}
+
+	async _prewarmRun(view) {
 		const r = this.renderer;
 		if (!r.backend.isWebGLBackend) return;
 		const multiview = !!(r.xr._useMultiviewIfPossible && r.hasFeature('OVR_multiview2'));
-		const target = new RenderTarget(4, 4, { depth: multiview ? 2 : 1, multiview, colorSpace: r.outputColorSpace });
 		const eyes = [0, 1].map(() => new PerspectiveCamera(140, 1, 0.12, 3200));
 		const cam = new ArrayCamera(eyes);
 		cam.isMultiViewCamera = multiview;
@@ -243,45 +289,27 @@ export class XRDrive {
 			c.updateMatrixWorld(true);
 			if (c !== cam) c.updateProjectionMatrix();
 		}
-		const prevTone = r.toneMapping;
-		r.toneMapping = ACESFilmicToneMapping;
-		this._stripMRT();
-		// hidden things too (yoke, hologram characters waiting for a street corner): skinned
-		// meshes bake their own bone buffer into the shader, so each needs its own variant
-		const hidden = [];
-		this.scene.traverse((o) => { if (!o.visible) { o.visible = true; hidden.push(o); } });
-		// transparent double-sided materials are drawn as a back pass + a front pass, each its
-		// own shader; compileAsync only builds the double-sided one (it restores material.side
-		// before its deferred builds run). Compile the two passes explicitly, on throwaway
-		// clones: the shader key is frozen when a render object is first created, and render
-		// objects are cached per mesh, so the real meshes would just reuse the first build.
-		const twoPass = [];
-		this.scene.traverse((o) => {
-			if (o.isMesh && !Array.isArray(o.material) && o.material.transparent && o.material.side === DoubleSide && !o.material.forceSinglePass) twoPass.push(o);
-		});
+		// the session renders into a multiview target; flag only our own builds as such
+		const prevHook = r.debug.onNodeBuilderCreated;
+		r.debug.onNodeBuilderCreated = (builder, renderObject) => {
+			if (multiview && renderObject.camera === cam) builder.enableMultiview();
+			prevHook?.(builder, renderObject);
+		};
 		try {
-			r.setOutputRenderTarget(target);
-			await r.compileAsync(this.scene, cam);
-			for (const side of [BackSide, FrontSide]) {
-				for (const o of twoPass) {
-					const c = o.clone(false);
-					c.frustumCulled = false;
-					o.material.side = side;
-					await r.compileAsync(c, cam, this.scene);
-					o.material.side = DoubleSide;
-				}
-			}
-		} catch (e) {
-			console.warn('XR prewarm', e);
+			await Promise.all([
+				precompile(r, this.lobby.scene, cam, { groups: 1 }), // the loading screen itself
+				// MRT-free (session-style) variants of everything, hidden things included (hologram
+				// characters waiting for a street corner), plus the wrist computer, which only
+				// joins the scene when the left controller connects
+				precompile(r, this.scene, cam, { stripMRT: true, includeHidden: true, extra: [this.wrist.mesh], onProgress: (f) => { this._prewarmFraction = f; } }),
+			]);
 		} finally {
-			for (const o of twoPass) o.material.side = DoubleSide;
-			r.setOutputRenderTarget(null);
-			this._restoreMRT();
-			for (const o of hidden) o.visible = false;
-			r.toneMapping = prevTone;
+			r.debug.onNodeBuilderCreated = prevHook;
 		}
-		this._prewarmTarget = target; // kept: its render objects hold the cached stereo builds
 	}
+
+	/** 0..1 */
+	get prewarmProgress() { return this._prewarmed ? 1 : this._prewarmFraction ?? 0; }
 
 	exit() { this.renderer.xr.getSession()?.end(); }
 
@@ -296,14 +324,16 @@ export class XRDrive {
 		this._stripMRT();
 		this.follow.valid = false;
 		this._placeHud();
-		this.yoke.visible = true;
-		this._recenterAt = 0.35; // once the first poses have arrived
+		this._recenterAt = 0.2; // once the first poses have arrived
 		this._sessionT = 0;
 		this.onSessionChange?.(true);
-		// the stereo variants of every shader get built now: stay in the dark (HUD up) until they're ready
-		this.warming = true;
-		this.say('SPOOLING UP · COMPILING THE CITY FOR YOUR EYES', 60);
-		this.renderer.compileAsync(this.scene, this.camera)
+		// stereo shader variants: normally prebuilt in the background by prewarm() — then the
+		// scene shows as soon as the first poses are in. If VR was entered before that finished,
+		// stay in the dark (HUD up) until it has. (Not a compileAsync on the session camera: at
+		// sessionstart it has no eye cameras yet, so it would build useless single-view variants.)
+		this.warming = !this._prewarmed;
+		this.say('SPOOLING UP · COMPILING THE CITY FOR YOUR EYES', this._prewarmed ? 0 : 60);
+		Promise.resolve(this._prewarmed || this.prewarm(this.camera))
 			.catch((e) => console.warn('XR precompile', e))
 			.finally(() => {
 				this.warming = false;
@@ -338,7 +368,7 @@ export class XRDrive {
 		this._restoreMRT();
 		this.renderer.toneMapping = this._prevTone;
 		this.renderer.toneMappingExposure = this._prevExposure;
-		this.yoke.visible = false;
+		carUniforms.yokeGlow.value = 0;
 		this.grab.active = false;
 		xrUniforms.vignette.value = 0;
 		xrUniforms.fade.value = 0;
@@ -458,7 +488,8 @@ export class XRDrive {
 	update(dt, fs, sharedCamera, info = {}) {
 		if (!this.presenting) return;
 		this._sessionT += dt;
-		if (this._recenterAt && this._sessionT > this._recenterAt) { this.recenter(); this._recenterAt = 0; }
+		// first poses in: recentre, then fade in (the snap stays hidden in the dark)
+		if (this._recenterAt && this._sessionT > this._recenterAt) { this.recenter(); this._recenterAt = 0; this._blink = 1; }
 		const A = this.anchor, car = this.car;
 
 		if (this.view === 0) {
@@ -498,18 +529,26 @@ export class XRDrive {
 			A.scale.setScalar(s);
 		}
 		A.updateMatrixWorld(true);
+		if (this.warming) {
+			const L = this.lobby;
+			L.root.matrix.copy(A.matrixWorld);
+			L.root.matrixWorldNeedsUpdate = true;
+			L.ring.rotation.z += dt * 0.35;
+			const pct = Math.floor(this.prewarmProgress * 100);
+			if (pct !== L.shown) { L.shown = pct; drawLobby(L.panel, pct / 100); }
+		}
 
 		// comfort: tunnel tightens with angular velocity and climb rate (cockpit + chase)
 		const turn = Math.abs(fs.yawRate ?? 0) * MathUtils.clamp(Math.abs(fs.speed) / 30, 0, 1.5) + Math.abs(fs.altVel ?? 0) * 0.02;
 		const vTarget = this.view === 2 ? 0 : MathUtils.clamp((turn - 0.25) * 0.9, 0, 1) * this.opts.vignette;
 		xrUniforms.vignette.value = MathUtils.damp(xrUniforms.vignette.value, vTarget, 6, dt);
 		this._blink = Math.max(0, this._blink - dt * 3);
-		xrUniforms.fade.value = this.warming ? 1 : Math.max(this._blink > 0.5 ? 1 : this._blink * 2, info.fade ?? 0);
+		xrUniforms.fade.value = this.warming || this._recenterAt ? 1 : Math.max(this._blink > 0.5 ? 1 : this._blink * 2, info.fade ?? 0);
 		// the tunnel sphere covers both eyes: don't blend it at all while it is fully transparent
 		this.tunnel.visible = xrUniforms.vignette.value > 0.01 || xrUniforms.fade.value > 0;
-		xrUniforms.yokeGlow.value = MathUtils.damp(xrUniforms.yokeGlow.value, this.grab.active ? 1 : 0, 10, dt);
+		carUniforms.yokeGlow.value = MathUtils.damp(carUniforms.yokeGlow.value, this.grab.active ? 1 : 0, 10, dt);
 		if (!this.grab.active) this.grab.angle = MathUtils.damp(this.grab.angle, -(info.steer ?? 0) * 0.9, 8, dt);
-		this.yoke.rotation.z = this.grab.angle;
+		this.car.setYoke(this.grab.angle); // the cockpit's own yoke follows your hands / the steering
 
 		// haptics: wall scrapes and boost kick-in
 		const imp = fs.impact ?? 0;
@@ -535,7 +574,7 @@ export class XRDrive {
 		sharedCamera.updateMatrixWorld(true);
 	}
 
-	render() { this.renderer.render(this.scene, this.camera); }
+	render() { this.renderer.render(this.warming ? this.lobby.scene : this.scene, this.camera); }
 
 	rebase(delta) { this.follow.pos.sub(delta); }
 

@@ -61,7 +61,7 @@ then open `https://<your-pc-ip>:5173` in the Quest Browser, accept the self-sign
 | right trigger / left trigger | thrust / brake & reverse |
 | left stick | steer (stick forward = thrust too) |
 | right stick ↑↓ | climb / dive |
-| **both grips** | grab the holographic yoke: roll it like a wheel to steer, push / pull to dive / climb |
+| **both grips** | grab the cockpit yoke: roll your hands like a wheel to steer (the yoke turns with you), push / pull to dive / climb |
 | `A` (or right stick click) | boost |
 | `B` | view: **COCKPIT** → **CHASE** → **DIORAMA** (you're 28× scale; the city becomes a model at your feet) |
 | `X` | autopilot on / off (let it fly while you look around); touching the controls takes back over |
@@ -107,7 +107,7 @@ side = g.realize(g.instance(g.mesh_line(n, (-0.42, 0, 0), g.vec(step, 0, 0)), fi
 
 ![kit](docs/kit_sheet.png)
 
-* **Hover car** (`car.py`, `npm run car` rebuilds just the car in ~20 s): the KX-11 Kestrel, a long Spinner-style sedan generated with bmesh. A station-table loft (subdivided, with creased sponson and shoulder character lines) whose top is dished into a real **cockpit tub**, a wraparound glass canopy, a long roof slab with a panoramic glass panel, side thruster nacelles and four ducted hover pads. Panel gaps, light bars, vents and neon lines are snapped onto the subdivided body with BVH ray casts. Inside: bucket seats, dashboard, steering yoke, console and three screens whose UVs map to a live canvas (`CockpitScreens.js`: speed/altitude cluster, moving street map, radio). Mount points (driver's eye, nozzles, trails, lamps) travel to the web build as glTF extras.
+* **Hover car** (`car.py`, `npm run car` rebuilds just the car in ~20 s): the KX-11 Kestrel, a long Spinner-style sedan generated with bmesh. A station-table loft (subdivided, with creased sponson and shoulder character lines) whose top is dished into a real **cockpit tub**, a wraparound glass canopy, a long roof slab with a panoramic glass panel, side thruster nacelles and four ducted hover pads. Panel gaps, light bars, vents and neon lines are snapped onto the subdivided body with BVH ray casts. Inside: bucket seats, dashboard, a steering yoke (its own `Yoke` node, turned at runtime), console and three screens whose UVs map to a live canvas (`CockpitScreens.js`: speed/altitude cluster, moving street map, radio). Mount points (driver's eye, nozzles, trails, lamps) travel to the web build as glTF extras.
 
 ![car](docs/car_sheet.jpg)
 * **City** (`city.py` → `CC_CityGenerator`): 33 inputs in panels *Grid / Skyline / Massing / Details / Palette / Preview*: block grid, lots, mega-blocks, district value-noise, landmarks, stepped setback tiers, neon trims, roofscape, facade signs, LED billboards, skybridges sized against both towers, street lamps, holograms. `Preview Origin X/Y` lets Blender show **any window of the infinite city**.

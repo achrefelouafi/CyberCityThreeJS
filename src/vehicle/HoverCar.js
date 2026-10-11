@@ -4,7 +4,7 @@
 
 import {
 	Group, Mesh, MeshPhysicalNodeMaterial, MeshStandardNodeMaterial, MeshBasicNodeMaterial, PointLight, SpotLight, Object3D, Color,
-	ConeGeometry, AdditiveBlending, DoubleSide, Vector3, MathUtils,
+	ConeGeometry, AdditiveBlending, DoubleSide, Vector3, Quaternion, MathUtils,
 } from 'three/webgpu';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import {
@@ -23,6 +23,7 @@ export const carUniforms = {
 	brake: uniform(0),
 	inside: uniform(0), // 1 in the cockpit view: glass fades so the city reads through it
 	paint: uniform(new Color(0.034, 0.008, 0.028)),
+	yokeGlow: uniform(0), // 0..1 hub ring brightens while the yoke is held (VR)
 };
 
 const fresnel = (p = 3) => pow(float(1).sub(abs(dot(normalWorld, normalize(cameraPosition.sub(positionWorld))))), p);
@@ -137,6 +138,18 @@ export class HoverCar {
 		this.body.add(model);
 		this.materials = mats;
 
+		// steering yoke: its own node (blender/car.py), turned about its column
+		this.yoke = model.getObjectByName('Yoke');
+		if (this.yoke) {
+			this.yokeAxis = A.yoke ? V(A.yoke.axis).normalize() : new Vector3(-0.94, 0.34, 0);
+			this.yokeRest = this.yoke.quaternion.clone();
+			// hub ring: cabin-dimmed neon (the shared material's in-cabin test works in car space,
+			// the yoke's vertices are relative to its hub), brightening while the yoke is held
+			const ring = mats.CC_CarNeon.clone();
+			ring.colorNode = carUniforms.neon.mul(carUniforms.neonI).mul(pulse).mul(0.14).mul(mix(float(1), float(3.5), carUniforms.yokeGlow));
+			this.yoke.traverse((o) => { if (o.isMesh && o.material === mats.CC_CarNeon) o.material = ring; });
+		}
+
 		// ------------------------------------------------------------ lights
 		this.under = new PointLight(0x18d6ff, 30, 50, 2);
 		this.under.position.set(0, -2, 0);
@@ -214,6 +227,12 @@ export class HoverCar {
 			this.body.localToWorld(tmp);
 			t.push(tmp, camera, dt);
 		});
+	}
+
+	/** Turn the steering yoke (radians, positive = counter-clockwise as the driver sees it). */
+	setYoke(angle) {
+		if (!this.yoke) return;
+		this.yoke.quaternion.setFromAxisAngle(this.yokeAxis, angle).multiply(this.yokeRest);
 	}
 
 	/** Feed the dashboard displays (call once per frame). */
