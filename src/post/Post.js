@@ -8,8 +8,12 @@
 //     -> grade: contrast, saturation, split-tone shadows/highlights
 //     -> SMAA | FXAA | off -> sharpen -> vignette + film grain
 //
-// Structural options (AA mode, depth of field, sharpen) live in `opts`; changing one
+// Structural options (AA mode, depth of field, sharpen, lite) live in `opts`; changing one
 // calls rebuild(). Everything else is a uniform and can be tweaked live.
+// `lite` (constructor option, fixed for the session) is the phone profile: the scene pass
+// writes only colour + motion vectors (tile GPUs pay for every MRT target in bandwidth;
+// materials' extra outputs are skipped by three), no SSR, one bloom chain doing the haze
+// too, a shorter motion blur, and no DOF / sharpen.
 
 import { RenderPipeline, Color, ACESFilmicToneMapping, SRGBColorSpace, CanvasTexture } from 'three/webgpu';
 import {
@@ -67,7 +71,7 @@ function lensDirtTexture() {
 }
 
 export class Post {
-	constructor(renderer, scene, camera, titleTexture = null) {
+	constructor(renderer, scene, camera, titleTexture = null, { lite = false } = {}) {
 		this.titleTexture = titleTexture;
 		this.renderer = renderer;
 		this.u = {
@@ -99,13 +103,14 @@ export class Post {
 			sharpen: uniform(0.35),
 			fade: uniform(1.0),
 		};
-		this.opts = { aa: 'SMAA', dof: true, sharpen: true };
+		this.lite = lite;
+		this.opts = { aa: 'SMAA', dof: !lite, sharpen: !lite };
 		this._tail = []; // passes owned by the current graph, disposed on rebuild
 		this.pipeline = new RenderPipeline(renderer);
 		this.pipeline.outputColorTransform = false;
 		this.scenePass = pass(scene, camera);
 		// MRT: beauty, motion vectors, view normals and a reflect mask (wet asphalt writes it)
-		this.scenePass.setMRT(mrt({ output, velocity, normal: normalView, reflect: vec2(0, 1) }));
+		this.scenePass.setMRT(lite ? mrt({ output, velocity }) : mrt({ output, velocity, normal: normalView, reflect: vec2(0, 1) }));
 		this.buildPasses();
 		this.build();
 	}
@@ -113,7 +118,19 @@ export class Post {
 	/** Passes created once (their uniforms are bound to GUI controls). */
 	buildPasses() {
 		const U = this.u;
-		const color = this.scenePass.getTextureNode('output');
+		const color = this.color = this.scenePass.getTextureNode('output');
+		this.bloom = bloom(color, 0.55, 0.38, 1.15);
+		const viewZ = this.scenePass.getViewZNode();
+		const far = smoothstep(30.0, 600.0, viewZ.negate());
+		const smudge = texture(lensDirtTexture(), uv()).r;
+		this._streaks(color);
+		if (this.lite) {
+			// the main bloom stands in for the wide haze bloom
+			this.wet = color;
+			this.hazeGlow = this.bloom.rgb.mul(far).mul(U.haze.mul(1.6));
+			this.dirt = this.bloom.rgb.mul(1.3).mul(smudge).mul(U.lensDirt);
+			return;
+		}
 		const refl = this.scenePass.getTextureNode('reflect');
 
 		// screen-space reflections on the wet streets (half res, roughness-blurred)
@@ -126,25 +143,22 @@ export class Post {
 		this.ssr.quality.value = 0.4;
 		this.wet = convertToTexture(vec4(color.rgb.add(this.ssr.rgb.mul(refl.r).mul(U.ssr)), 1));
 
-		// bloom on the HDR beauty
-		this.bloom = bloom(color, 0.55, 0.38, 1.15);
-
 		// atmospheric glow: a second, very wide bloom weighted by distance, so neon
 		// light scatters into the haze of the far canyon (cheap volumetric impression)
 		this.haze = bloom(color, 1.0, 1.0, 0.35);
-		const viewZ = this.scenePass.getViewZNode();
-		const far = smoothstep(30.0, 600.0, viewZ.negate());
 		this.hazeGlow = this.haze.rgb.mul(far).mul(U.haze); // only distant light scatters into the haze
 
+		// lens dirt (baked once to a texture), lit only where the bloom is
+		this.dirt = this.haze.rgb.mul(0.5).add(this.bloom.rgb).mul(smudge).mul(U.lensDirt);
+	}
+
+	_streaks(color) {
+		const U = this.u;
 		// anamorphic streaks: bright pass -> two widening horizontal blurs at 1/4 res
 		const bright = max(color.rgb.sub(U.anaThreshold), vec3(0)).mul(0.5);
 		const s1 = gaussianBlur(vec4(bright, 1), vec2(2.5, 0), 10, { resolutionScale: 0.25 });
 		const s2 = gaussianBlur(s1, vec2(7.0, 0), 10, { resolutionScale: 0.25 });
 		this.streaks = s1.rgb.mul(0.4).add(s2.rgb).mul(U.anaTint).mul(U.anamorphic);
-
-		// lens dirt (baked once to a texture), lit only where the bloom is
-		const smudge = texture(lensDirtTexture(), uv()).r;
-		this.dirt = this.haze.rgb.mul(0.5).add(this.bloom.rgb).mul(smudge).mul(U.lensDirt);
 	}
 
 	/** (Re)assemble the graph from the current `opts`. */
@@ -166,7 +180,7 @@ export class Post {
 		const v = vel.xy.sub(turnVel.mul(float(1).sub(U.turnBlur))).mul(vec2(0.5, -0.5)).mul(U.motionBlur).mul(U.shutter);
 		const vLen = length(v);
 		const vClamped = v.mul(min(float(1), U.maxBlur.div(max(vLen, 1e-5)))); // cap streak length (UV)
-		const moved = motionBlur(this.wet, vClamped, int(10));
+		const moved = motionBlur(this.wet, vClamped, int(this.lite ? 5 : 10));
 		// cinematic depth of field (driven per shot by the director: focus on the car).
 		// The DOF composite swaps out-of-focus pixels for its half-res blur even at bokeh 0,
 		// so it is faded out entirely whenever the amount is zero (driving, wide shots).
@@ -200,7 +214,8 @@ export class Post {
 			// 2.39:1 letterbox (animated in/out)
 			const bar = max(float(1).sub(screenSize.x.div(screenSize.y).div(2.39)), 0.0).mul(0.5).mul(U.letterbox);
 			const lb = step(bar, uv().y).mul(step(uv().y, float(1).sub(bar)));
-			let c = aa.rgb.mul(vig).add(n.mul(U.grain)).mul(U.fade);
+			// lite renders well under native res: full-strength grain would upscale into blocky noise
+			let c = aa.rgb.mul(vig).add(n.mul(this.lite ? U.grain.mul(0.5) : U.grain)).mul(U.fade);
 			if (this.titleTexture) {
 				// title card (2:1 texture, ~70% of the frame width), composited additively-ish;
 				// on narrow (portrait) screens it shrinks to fit the width instead of being cropped

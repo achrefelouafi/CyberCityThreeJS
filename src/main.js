@@ -67,12 +67,14 @@ async function main() {
 	await renderer.init();
 	// render scale = CSS px -> render px. Auto mode adapts it between min and max to hold
 	// ~60 fps; max > 1 supersamples on fast GPUs (the cleanest anti-aliasing there is).
-	// Phones and tablets start at 1x and may climb a little: their 3x screens would otherwise
-	// open on 9x the pixels of a desktop and stutter until the scaler caught up.
+	// Phones and tablets run the lite post profile (see Post.js) at 1x and may climb a little:
+	// their 3x screens would otherwise open on 9x the pixels of a desktop. The floor stays at
+	// 1x — below it the upscaled image goes soft and jaggy, which reads worse than a few fps.
 	const touchFirst = isTouchFirst();
+	const lite = params.has('lite') ? params.get('lite') !== '0' : touchFirst;
 	const quality = touchFirst ? {
 		scale: Math.min(1, +(params.get('dpr') ?? 1)),
-		auto: !params.has('dpr'), min: 0.6, max: Math.min(Math.max(window.devicePixelRatio, 1), 1.5),
+		auto: !params.has('dpr'), min: 1, max: Math.min(Math.max(window.devicePixelRatio, 1), 1.5),
 	} : {
 		scale: Math.min(Math.max(window.devicePixelRatio, 1), +(params.get('dpr') ?? 2)),
 		auto: !params.has('dpr'), min: 0.85, max: Math.max(1.5, Math.min(window.devicePixelRatio, 2)),
@@ -139,7 +141,7 @@ async function main() {
 
 	// ------------------------------------------------------------------ city + flight
 	progress(0.6, 'GENERATING CITY FROM GN LAYOUT');
-	const city = new CityStreamer({ scene, layout, kit, material, holoMaterial: holo, chunkBlocks: 4, radius: +(params.get('radius') ?? (touchFirst ? 2 : 3)), detailRadius: 1 });
+	const city = new CityStreamer({ scene, layout, kit, material, holoMaterial: holo, chunkBlocks: 4, radius: +(params.get('radius') ?? (touchFirst ? 2 : 3)), detailRadius: 1, midRadius: touchFirst ? 1 : 2 });
 	const ap = new Autopilot(layout, values.Seed * 31 + 7);
 	// switching into XR mode reloads the page: pick up where the car was
 	const SPOT_KEY = 'neokyoto.spot';
@@ -256,7 +258,7 @@ async function main() {
 
 	// ------------------------------------------------------------------ post
 	const title = new TitleCard();
-	const post = new Post(renderer, scene, camera, title.texture);
+	const post = new Post(renderer, scene, camera, title.texture, { lite });
 	const capture = new Capture(canvas);
 
 	// ------------------------------------------------------------------ GUI
@@ -602,7 +604,8 @@ async function main() {
 		const tc = title.update(dt);
 		post.u.title.value = tc.alpha;
 		post.u.titleScale.value = tc.scale;
-		post.u.letterbox.value = MathUtils.damp(post.u.letterbox.value, cinema.letterbox && camState.mode === 'cinematic' ? 1 : 0, 4, dt);
+		// letterbox only on landscape screens: 2.39:1 bars would swallow most of a phone held upright
+		post.u.letterbox.value = MathUtils.damp(post.u.letterbox.value, cinema.letterbox && camState.mode === 'cinematic' && camera.aspect > 1.2 ? 1 : 0, 4, dt);
 
 		city.update(camera);
 		const delta = city.maybeRebase(camera.position);
