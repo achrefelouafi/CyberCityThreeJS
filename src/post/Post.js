@@ -202,8 +202,9 @@ export class Post {
 			const lb = step(bar, uv().y).mul(step(uv().y, float(1).sub(bar)));
 			let c = aa.rgb.mul(vig).add(n.mul(U.grain)).mul(U.fade);
 			if (this.titleTexture) {
-				// title card (2:1 texture, ~70% of the frame width), composited additively-ish
-				const W = float(1.3).mul(U.titleScale);
+				// title card (2:1 texture, ~70% of the frame width), composited additively-ish;
+				// on narrow (portrait) screens it shrinks to fit the width instead of being cropped
+				const W = min(float(1.3), screenSize.x.div(screenSize.y).mul(0.92)).mul(U.titleScale);
 				const tuv = vec2(uv().x.sub(0.5).mul(screenSize.x.div(screenSize.y)).div(W).add(0.5), uv().y.sub(0.5).div(W.mul(0.5)).add(0.5));
 				const inside = step(0.0, tuv.x).mul(step(tuv.x, 1.0)).mul(step(0.0, tuv.y)).mul(step(tuv.y, 1.0));
 				const tc = texture(this.titleTexture, vec2(tuv.x, tuv.y.oneMinus()));

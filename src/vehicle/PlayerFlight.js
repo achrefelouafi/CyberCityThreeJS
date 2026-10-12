@@ -103,11 +103,13 @@ export class PlayerFlight {
 	}
 }
 
-/** Keyboard + gamepad -> { throttle, steer, lift, boost }. */
+/** Keyboard + gamepad + on-screen touch controls -> { throttle, steer, lift, boost }. */
 export class FlightInput {
 	constructor() {
 		this.keys = new Set();
 		this.lastActive = 0;
+		// written by TouchControls; held counts the fingers currently on a control
+		this.touch = { throttle: 0, steer: 0, lift: 0, boost: false, held: 0 };
 		window.addEventListener('keydown', (e) => {
 			if (e.target.closest?.('.lil-gui')) return;
 			this.keys.add(e.code);
@@ -131,6 +133,11 @@ export class FlightInput {
 			lift: ax('KeyE', 'KeyQ') || (k.has('Space') ? 1 : 0) - (k.has('ControlLeft') ? 1 : 0),
 			boost: k.has('ShiftLeft') || k.has('ShiftRight'),
 		};
+		const t = this.touch;
+		s.throttle = s.throttle || t.throttle;
+		s.steer = s.steer || t.steer;
+		s.lift = s.lift || t.lift;
+		s.boost = s.boost || t.boost;
 		const pad = navigator.getGamepads?.().find((p) => p && p.connected);
 		if (pad) {
 			const dz = (v) => (Math.abs(v) < 0.12 ? 0 : v);
@@ -146,7 +153,7 @@ export class FlightInput {
 	}
 
 	/** True while any flight control is being used. */
-	get active() { return performance.now() - this.lastActive < 400 || [...this.keys].some((c) => FlightInput.DRIVE_KEYS.has(c)); }
+	get active() { return performance.now() - this.lastActive < 400 || this.touch.held > 0 || [...this.keys].some((c) => FlightInput.DRIVE_KEYS.has(c)); }
 }
 
 /** True if an absolute three-space point is inside a building / skybridge (+margin). */

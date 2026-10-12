@@ -81,10 +81,15 @@ export class Director {
 	}
 
 	attachMouse(el) {
-		let lx = 0, ly = 0;
-		el.addEventListener('pointerdown', (e) => { if (this.mode !== 'drive') return; this.drag.active = true; lx = e.clientX; ly = e.clientY; el.setPointerCapture?.(e.pointerId); });
+		// one pointer drives the look; a second finger landing on the city doesn't hijack it
+		let lx = 0, ly = 0, id = null;
+		el.addEventListener('pointerdown', (e) => {
+			if (this.mode !== 'drive' || id !== null) return;
+			id = e.pointerId; this.drag.active = true; lx = e.clientX; ly = e.clientY;
+			el.setPointerCapture?.(e.pointerId);
+		});
 		el.addEventListener('pointermove', (e) => {
-			if (!this.drag.active) return;
+			if (!this.drag.active || e.pointerId !== id) return;
 			this.drag.yaw -= (e.clientX - lx) * 0.006;
 			this.drag.pitch = MathUtils.clamp(this.drag.pitch + (e.clientY - ly) * 0.004, -0.5, 1.1);
 			lx = e.clientX; ly = e.clientY;
@@ -94,7 +99,7 @@ export class Director {
 			this.zoom = MathUtils.clamp(this.zoom * Math.exp(e.deltaY * 0.001), 0.45, 3.5);
 			e.preventDefault();
 		}, { passive: false });
-		const up = () => { this.drag.active = false; };
+		const up = (e) => { if (e.pointerId === id) { id = null; this.drag.active = false; } };
 		el.addEventListener('pointerup', up);
 		el.addEventListener('pointercancel', up);
 	}

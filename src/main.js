@@ -23,6 +23,7 @@ import { Post } from './post/Post.js';
 import { buildGui } from './ui/Gui.js';
 import { Capture } from './ui/Capture.js';
 import { Contact } from './ui/Contact.js';
+import { TouchControls, isTouchFirst } from './ui/TouchControls.js';
 import { LOOKS } from './looks.js';
 import { TitleCard } from './ui/TitleCard.js';
 import { VideoAtlas } from './media/VideoAtlas.js';
@@ -66,7 +67,13 @@ async function main() {
 	await renderer.init();
 	// render scale = CSS px -> render px. Auto mode adapts it between min and max to hold
 	// ~60 fps; max > 1 supersamples on fast GPUs (the cleanest anti-aliasing there is).
-	const quality = {
+	// Phones and tablets start at 1x and may climb a little: their 3x screens would otherwise
+	// open on 9x the pixels of a desktop and stutter until the scaler caught up.
+	const touchFirst = isTouchFirst();
+	const quality = touchFirst ? {
+		scale: Math.min(1, +(params.get('dpr') ?? 1)),
+		auto: !params.has('dpr'), min: 0.6, max: Math.min(Math.max(window.devicePixelRatio, 1), 1.5),
+	} : {
 		scale: Math.min(Math.max(window.devicePixelRatio, 1), +(params.get('dpr') ?? 2)),
 		auto: !params.has('dpr'), min: 0.85, max: Math.max(1.5, Math.min(window.devicePixelRatio, 2)),
 	};
@@ -132,7 +139,7 @@ async function main() {
 
 	// ------------------------------------------------------------------ city + flight
 	progress(0.6, 'GENERATING CITY FROM GN LAYOUT');
-	const city = new CityStreamer({ scene, layout, kit, material, holoMaterial: holo, chunkBlocks: 4, radius: +(params.get('radius') ?? 3), detailRadius: 1 });
+	const city = new CityStreamer({ scene, layout, kit, material, holoMaterial: holo, chunkBlocks: 4, radius: +(params.get('radius') ?? (touchFirst ? 2 : 3)), detailRadius: 1 });
 	const ap = new Autopilot(layout, values.Seed * 31 + 7);
 	// switching into XR mode reloads the page: pick up where the car was
 	const SPOT_KEY = 'neokyoto.spot';
@@ -438,9 +445,10 @@ async function main() {
 		if (pilot && m !== 'drive') { exitPilot(m); return; }
 		camState.mode = m;
 		$('hud-mode').textContent = m === 'drive' ? 'PILOT' : m.toUpperCase();
+		const touch = document.body.classList.contains('touchscreen');
 		$('hint').textContent = m === 'drive'
-			? 'PILOT · F COCKPIT · V CAMERA · DRAG TO LOOK · C CINEMATIC'
-			: 'C OR W A S D — TAKE THE WHEEL';
+			? (touch ? 'PILOT · DRAG THE CITY TO LOOK' : 'PILOT · F COCKPIT · V CAMERA · DRAG TO LOOK · C CINEMATIC')
+			: (touch ? 'TOUCH THE STICK — TAKE THE WHEEL' : 'C OR W A S D — TAKE THE WHEEL');
 		document.body.classList.toggle('piloting', m === 'drive');
 		if (m === 'drive') {
 			controls.enabled = false;
@@ -456,21 +464,25 @@ async function main() {
 		}
 		gui.controllersRecursive().forEach((c) => c.updateDisplay());
 	}
+	// C toggles between flying yourself and the cinematic director
+	const toggleFly = () => (camState.mode === 'drive' ? exitPilot('cinematic') : enterPilot());
+	const cycleCam = () => { director.cycleDriveCam(); camState.driveCam = DRIVE_CAMS[director.driveCam]; };
+	// first person: jump into the cockpit (and take the wheel), or back out to the chase cam
+	const toggleCockpit = () => {
+		if (!pilot) enterPilot();
+		director.setDriveCam(director.driveCam === 2 ? 0 : 2);
+		camState.driveCam = DRIVE_CAMS[director.driveCam];
+	};
+	const touchUi = new TouchControls(hud, input, {
+		fly: toggleFly, cockpit: toggleCockpit,
+		cam: () => { if (!pilot) enterPilot(); cycleCam(); },
+	});
 	window.addEventListener('keydown', (e) => {
 		if (e.target.closest?.('.lil-gui')) return;
 		const k = e.key.toLowerCase();
-		if (k === 'c') {
-			// C toggles between flying yourself and the cinematic director
-			if (camState.mode === 'drive') exitPilot('cinematic');
-			else enterPilot();
-		}
-		else if (k === 'v') { director.cycleDriveCam(); camState.driveCam = DRIVE_CAMS[director.driveCam]; }
-		else if (k === 'f') {
-			// first person: jump into the cockpit (and take the wheel), or back out to the chase cam
-			if (!pilot) enterPilot();
-			director.setDriveCam(director.driveCam === 2 ? 0 : 2);
-			camState.driveCam = DRIVE_CAMS[director.driveCam];
-		}
+		if (k === 'c') toggleFly();
+		else if (k === 'v') cycleCam();
+		else if (k === 'f') toggleCockpit();
 		else if (k === 'o') setMode(camState.mode === 'free' ? 'cinematic' : 'free');
 		else if (k === 'h') { hud.classList.toggle('hidden'); toggleSettings(false); }
 		else if (k === 'g') toggleSettings();
@@ -574,6 +586,7 @@ async function main() {
 		const inside = vr ? xr.inCockpit : camState.mode === 'drive' && director.inCockpit;
 		carUniforms.inside.value = MathUtils.damp(carUniforms.inside.value, inside ? 1 : 0, 10, dt);
 		document.body.classList.toggle('cockpit', inside && !vr);
+		touchUi.sync(pilot, inside);
 		car.updateScreens(dt, {
 			speed: fs.speed, alt: fs.alt, boost: fs.boost ?? 0, throttle: carUniforms.throttle.value / 1.4,
 			heading: Math.atan2(-fs.forward.z, fs.forward.x), x: fs.pos.x, z: fs.pos.z,
